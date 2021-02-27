@@ -52,20 +52,6 @@ module.exports = function (file, api) {
             specifier.local.name === 'Taro'
     );
 
-    // Check to see if we should keep the Taro import
-    const isTaroImportUsed =
-        root
-            .find(j.Identifier, {
-                name: 'Taro'
-            })
-            .filter(path => path.parent.parent.value.type !== 'ImportDeclaration')
-            .size() > 0;
-
-    const shouldImportReact =
-        root
-            .find(j.JSXElement)
-            .size() > 0;
-
     const reactImportSpecifiers = [];
     const taroImportSpecifiers = []
 
@@ -78,24 +64,48 @@ module.exports = function (file, api) {
                 taroImportSpecifiers.push(specifier);
             }
         });
+
+    // Check to see if we should keep the Taro import
+    let isTaroImportUsed =
+        root
+            .find(j.Identifier, {
+                name: 'Taro'
+            })
+            .filter(path => path.parent.parent.value.type !== 'ImportDeclaration')
+            .size() > 0;
+
+    let shouldImportReact =
+        root
+            .find(j.JSXElement)
+            .size() > 0;
     
+    if (isDefaultImport && isTaroImportUsed) {
+        const taroUsedApis =
+            root
+                .find(j.MemberExpression, {
+                    object: {
+                        type: 'Identifier',
+                        name: 'Taro',
+                    },
+                })
+                .filter(path => {
+                    const property = path.value.property.name;
+
+                    const isReactApi = REACT_APIS.indexOf(property) !== -1;
+                    if (isReactApi) {
+                        shouldImportReact = true;
+                        j(path.get('object')).replaceWith(j.identifier('React'));
+                    }
+                    return !isReactApi;
+                });
+
+        if (taroUsedApis.size() === 0) {
+            isTaroImportUsed = false;
+        }
+    }
+
     if (isTaroImportUsed) {
         taroImportSpecifiers.unshift(j.importDefaultSpecifier(j.identifier('Taro')));
-
-        root
-            .find(j.MemberExpression, {
-                object: {
-                    type: 'Identifier',
-                    name: 'Taro',
-                },
-            })
-            .filter(path => {
-                const property = path.value.property.name;
-                return REACT_APIS.indexOf(property) !== -1
-            })
-            .forEach(property => {
-                j(property.get('object')).replaceWith(j.identifier('React'))
-            });
     }
     
     if (shouldImportReact) {
