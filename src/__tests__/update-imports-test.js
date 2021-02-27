@@ -3,4 +3,17 @@
 jest.autoMockOff();
 const defineTest = require('jscodeshift/dist/testUtils').defineTest;
 
-defineTest(__dirname, 'update-imports');
+const tests = [
+    'basic-default',
+    'basic-default-export-jsx-element',
+    'default-and-multiple-specifiers-import'
+];
+
+tests.forEach(test => {
+    defineTest(
+        __dirname,
+        'update-imports',
+        null,
+        `update-imports/${test}`
+    );
+});

@@ -93,18 +93,22 @@ module.exports = function (file, api) {
         reactImportSpecifiers.unshift(j.importDefaultSpecifier(j.identifier('React')));
     }
 
-    const reactImportStatement = j.importDeclaration(
-        reactImportSpecifiers,
-        j.literal('react')
-    );
-    root.get().node.program.body.unshift(reactImportStatement);
+    if (reactImportSpecifiers.length > 0) {
+        const reactImportDeclaration = j.importDeclaration(
+            reactImportSpecifiers,
+            j.literal('react')
+        );
+        root.get().node.program.body.unshift(reactImportDeclaration);
+    }
 
-    j(taroPath).insertAfter(
-        j.importDeclaration(
+    if (taroImportSpecifiers.length) {
+        const taroImportDeclaration = j.importDeclaration(
             taroImportSpecifiers,
             j.literal('@tarojs/taro')
         )
-    );
+        j(taroPath).insertAfter(taroImportDeclaration);
+    }
+
     j(taroPath).remove();
 
     return root.toSource({quote: 'single'});
