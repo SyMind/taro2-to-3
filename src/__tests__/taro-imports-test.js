@@ -8,14 +8,14 @@ const tests = [
     'default-export-jsx-element',
     'multiple-specifiers-import',
     'default-and-multiple-specifiers-import',
-    'leading-comment'
+    'comment'
 ];
 
 tests.forEach(test => {
     defineTest(
         __dirname,
-        'update-imports',
+        'taro-imports',
         null,
-        `update-imports/${test}`
+        `taro-imports/${test}`
     );
 });

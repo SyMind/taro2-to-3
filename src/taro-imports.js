@@ -20,15 +20,6 @@ module.exports = function (file, api) {
     const j = api.jscodeshift;
     const root = j(file.source);
 
-    // https://github.com/facebook/jscodeshift/blob/master/recipes/retain-first-comment.md
-    function getFirstNode() {
-        return root.find(j.Program).get('body', 0).node;
-    }
-
-    // Save the comments attached to the first node
-    const firstNode = getFirstNode();
-    const { comments } = firstNode;
-
     // Get all paths that import from Taro
     const taroImportPaths = root
         .find(j.ImportDeclaration, {
@@ -112,12 +103,15 @@ module.exports = function (file, api) {
         reactImportSpecifiers.unshift(j.importDefaultSpecifier(j.identifier('React')));
     }
 
+    const imports = [];
+
     if (reactImportSpecifiers.length > 0) {
         const reactImportDeclaration = j.importDeclaration(
             reactImportSpecifiers,
             j.literal('react')
         );
-        root.get().node.program.body.unshift(reactImportDeclaration);
+        imports.push(reactImportDeclaration);
+        j(taroPath).insertBefore(reactImportDeclaration);
     }
 
     if (taroImportSpecifiers.length) {
@@ -125,16 +119,30 @@ module.exports = function (file, api) {
             taroImportSpecifiers,
             j.literal('@tarojs/taro')
         )
-        j(taroPath).insertAfter(taroImportDeclaration);
+        imports.push(taroImportDeclaration);
+        j(taroPath).insertBefore(taroImportDeclaration);
+    }
+
+    if (imports.length === 0) {
+        return;
+    }
+
+    if (taroPath.value.comments) {
+        imports[0].comments = taroPath.value.comments;
     }
 
     j(taroPath).remove();
 
-    // If the first node has been modified or deleted, reattach the comments
-    const firstNode2 = getFirstNode();
-    if (firstNode2 !== firstNode) {
-        firstNode2.comments = comments;
+    const source = root.toSource({quote: 'single'});
+    if (imports[0].comments) {
+        const comments = imports[0].comments;
+        const blankLine = comments[comments.length - 1].loc.end.line + 1;
+        const lines = source.split('\n');
+        if (!lines[blankLine]) {
+            lines.splice(blankLine, 1)
+        }
+        return lines.join('\n');
     }
 
-    return root.toSource({quote: 'single'});
+    return source;
 }

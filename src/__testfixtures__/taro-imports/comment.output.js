@@ -1,8 +1,11 @@
-import Taro, { Component } from '@tarojs/taro'
+/**
+ * @file Default and multiple specifiers import.
+ */
+import React, { Component } from 'react';
+import Taro from '@tarojs/taro';
 
 class Wallace extends Component {
     componentDidMount() {
-        const a = Taro.createRef();
         Taro.request().then(() => {});
     }
     render() {
