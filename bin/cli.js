@@ -14,7 +14,8 @@ const babylonConfig = path.join(__dirname, './babylon.config.json');
 
 const transformers = [
   'taro-imports',
-  'router'
+  'router',
+  'page-config'
 ];
 
 async function ensureGitClean() {

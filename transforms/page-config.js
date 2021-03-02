@@ -29,7 +29,7 @@ module.exports = function (file, api, options) {
       return;
     }
 
-    const objectExpression = configPath.paths()[0].value;
+    const objectExpression = configPath.paths()[0].value.value;
 
     const configFile = j.file(
       j.program([
@@ -41,9 +41,24 @@ module.exports = function (file, api, options) {
       .slice(0, -1)
       .concat('config.js')
       .join('.');
-    fs.writeFileSync(configFilePath, j(configFile).toSource());
-        
+
+    const configSource = j(configFile).toSource();
     configPath.remove();
+
+    const rootSource = root.toSource(options);
+
+    if (process.env.NODE_ENV === 'test') {
+      const path = require('path');
+      return [
+        rootSource,
+        `// ${path.basename(configFilePath)}`,
+        '/*',
+        configSource,
+        '*/'
+      ].join('\n');
+    } else {
+      fs.writeFileSync(configFilePath, j(configFile).toSource());
+    }
   }
     
   return root.toSource(options);

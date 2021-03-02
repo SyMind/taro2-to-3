@@ -25,11 +25,11 @@ class Wallace extends Component {
 }
 ```
 
-### `app-or-page-config`
+### `page-config`
 
-在 Taro 2.x 中，页面/项目的配置挂载在类组件的类属性或函数式的属性上，通过 AST 分析取出来，然后生成 JSON 文件。
+在 Taro 2.x 中，页面的配置挂载在类组件的类属性或函数式的属性上，通过 AST 分析取出来，然后生成 JSON 文件。
 
-在 Taro 3.x 中，使用 *.config.js ，该文件和页面/项目文件在同一文件夹。
+在 Taro 3.x 中，使用 *.config.js ，该文件和页面文件在同一文件夹。
 
 ```diff
 // foo.jsx
