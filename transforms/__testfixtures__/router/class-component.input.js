@@ -1,7 +1,7 @@
-import Taro, { Component } from '@tarojs/taro'
+import Taro, { Component } from '@tarojs/taro';
 
 class Foo extends Component {
-    componentWillMount() {
-        console.log(this.$router);
-    }
+  componentWillMount() {
+    console.log(this.$router);
+  }
 }

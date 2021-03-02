@@ -1,5 +1,5 @@
-import Taro from '@tarojs/taro'
+import Taro from '@tarojs/taro';
 
 function Wallace() {
-    return <div />;
+  return <div />;
 }
