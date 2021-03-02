@@ -129,12 +129,12 @@ module.exports = function (file, api, options) {
     imports[0].comments = taroPath.value.comments;
   }
 
+  const blankLine = taroPath.value.loc.end.line;
+
   j(taroPath).remove();
 
   const source = root.toSource(options);
   if (imports[0].comments) {
-    const comments = imports[0].comments;
-    const blankLine = comments[comments.length - 1].loc.end.line + 1;
     const lines = source.split('\n');
     if (!lines[blankLine]) {
       lines.splice(blankLine, 1);
