@@ -2,6 +2,9 @@
   "name": "taro2-to-3",
   "version": "1.0.0",
   "description": "taro 2.x 项目转换为 taro 3.x 项目",
+  "bin": {
+    "taro-2-to-3": "./bin/taro-2-to-3.js"
+  },
   "main": "index.js",
   "scripts": {
     "test": "jest"
@@ -18,8 +21,12 @@
   },
   "homepage": "https://github.com/SyMind/taro2-to-3#readme",
   "dependencies": {
+    "chalk": "^4.1.0",
     "execa": "^5.0.0",
-    "jscodeshift": "^0.11.0"
+    "is-git-clean": "^1.1.0",
+    "jscodeshift": "^0.11.0",
+    "read-pkg-up": "^7.0.1",
+    "yargs-parser": "^20.2.6"
   },
   "devDependencies": {
     "babel-jest": "^26.6.3",

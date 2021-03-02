@@ -6,6 +6,7 @@ const REACT_APIS = [
     'createContext',
 
     // Hooks
+    'useEffect',
     'useState',
     'useReducer',
     'useRef',
