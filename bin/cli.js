@@ -4,7 +4,12 @@ const os = require('os');
 const chalk = require('chalk');
 const execa = require('execa');
 const isGitClean = require('is-git-clean');
+const readPkgUp = require('read-pkg-up');
+const Table = require('cli-table');
+const semverSatisfies = require('semver/functions/satisfies');
 const jscodeshiftBin = require.resolve('.bin/jscodeshift');
+
+const taroDeps = require('./taroDeps');
 
 const transformersDir = path.join(__dirname, '../transforms');
 
@@ -16,6 +21,14 @@ const transformers = [
   'taro-imports',
   'router',
   'page-config'
+];
+
+const dependencyProperties = [
+  'dependencies',
+  'devDependencies',
+  'clientDependencies',
+  'isomorphicDependencies',
+  'buildDependencies'
 ];
 
 async function ensureGitClean() {
@@ -101,6 +114,72 @@ async function transform(transformer, parser, filePath, options) {
   }
 }
 
+async function checkDependencies(targetDir) {
+  const cwd = path.join(process.cwd(), targetDir);
+  const closetPkgJson = await readPkgUp({ cwd });
+
+  if (!closetPkgJson) {
+    console.log('We didn\'t find your package.json');
+    return;
+  }
+
+  const { packageJson } = closetPkgJson;
+  const upgradeDeps = Object.create(null);
+  const deprecatedDeps = [];
+  const additionsDeps = taroDeps.additions;
+  dependencyProperties.forEach(property => {
+    const deps = packageJson[property];
+    if (!deps) {
+      return;
+    }
+
+    const {expectVersion, deprecated, upgrade} = taroDeps;
+    deprecated.forEach(depName => {
+      if (deps[depName]) {
+        deprecatedDeps.push(depName);
+      }
+    });
+    upgrade.forEach(depName => {
+      const versionRange = deps[depName];
+      if (!!versionRange && !semverSatisfies(expectVersion, versionRange)) {
+        upgradeDeps[depName] = [versionRange, expectVersion];
+      }
+    });
+  });
+
+  console.log('----------- taro dependencies alert -----------\n');
+  const table = new Table({
+    colAligns: ['left', 'right', 'right', 'right'],
+    chars: {
+      top: '',
+      'top-mid': '',
+      'top-left': '',
+      'top-right': '',
+      bottom: '',
+      'bottom-mid': '',
+      'bottom-left': '',
+      'bottom-right': '',
+      left: '',
+      'left-mid': '',
+      mid: '',
+      'mid-mid': '',
+      right: '',
+      'right-mid': '',
+      middle: ''
+    }
+  });
+  Object.keys(upgradeDeps).forEach(depName => {
+    const [from, expect] = upgradeDeps[depName];
+    table.push([depName, from, '→', expect]);
+  });
+  console.log('* Update');
+  console.log(table.toString());
+  console.log('* Install');
+  console.log(additionsDeps);
+  console.log('* Deprecated');
+  console.log(deprecatedDeps);
+}
+
 /**
  * options
  * --force   // force skip git checking (dangerously)
@@ -133,8 +212,11 @@ async function bootstrap() {
     process.exit(1);
   }
   await run(dir, args);
-}
 
+  await checkDependencies(dir);
+
+  console.log('----------- Thanks for using taro-2-to-3 -----------');
+}
 
 module.exports = {
   bootstrap,
