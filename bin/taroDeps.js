@@ -29,7 +29,11 @@ module.exports = {
     '@tarojs/mobx-rn',
     'stylelint-taro-rn',
     'stylelint-config-taro-rn',
-    'taro-css-to-react-native'
+    'taro-css-to-react-native',
+    '@tarojs/taro-alipay',
+    '@tarojs/taro-swan',
+    '@tarojs/taro-tt',
+    '@tarojs/taro-weapp'
   ],
   upgrade: [
     'babel-plugin-transform-taroapi',
@@ -50,11 +54,7 @@ module.exports = {
     '@tarojs/with-weapp',
     '@tarojs/taroize',
     '@tarojs/with-weapp',
-    '@tarojs/taro-alipay',
-    '@tarojs/taro-h5',
-    '@tarojs/taro-swan',
-    '@tarojs/taro-tt',
-    '@tarojs/taro-weapp'
+    '@tarojs/taro-h5'
   ],
   additions: [
     'babel-preset-taro',

@@ -6,6 +6,7 @@ const execa = require('execa');
 const isGitClean = require('is-git-clean');
 const readPkgUp = require('read-pkg-up');
 const Table = require('cli-table');
+const inquirer = require('inquirer');
 const semverSatisfies = require('semver/functions/satisfies');
 const jscodeshiftBin = require.resolve('.bin/jscodeshift');
 
@@ -30,6 +31,24 @@ const dependencyProperties = [
   'isomorphicDependencies',
   'buildDependencies'
 ];
+
+const tableChars = {
+  top: '',
+  'top-mid': '',
+  'top-left': '',
+  'top-right': '',
+  bottom: '',
+  'bottom-mid': '',
+  'bottom-left': '',
+  'bottom-right': '',
+  left: '',
+  'left-mid': '',
+  mid: '',
+  'mid-mid': '',
+  right: '',
+  'right-mid': '',
+  middle: ''
+};
 
 async function ensureGitClean() {
   let clean = false;
@@ -148,36 +167,67 @@ async function checkDependencies(targetDir) {
   });
 
   console.log('----------- taro dependencies alert -----------\n');
-  const table = new Table({
+  console.log(
+    chalk.yellow(
+      'Should install/uninstall/upgrade these dependencies to ensure working well with taro3'
+    )
+  );
+
+  const upgradeDepsTable = new Table({
     colAligns: ['left', 'right', 'right', 'right'],
-    chars: {
-      top: '',
-      'top-mid': '',
-      'top-left': '',
-      'top-right': '',
-      bottom: '',
-      'bottom-mid': '',
-      'bottom-left': '',
-      'bottom-right': '',
-      left: '',
-      'left-mid': '',
-      mid: '',
-      'mid-mid': '',
-      right: '',
-      'right-mid': '',
-      middle: ''
-    }
+    chars: tableChars
+  });
+  const additionsDepsTable = new Table({
+    colAligns: ['left', 'right'],
+    chars: tableChars
   });
   Object.keys(upgradeDeps).forEach(depName => {
     const [from, expect] = upgradeDeps[depName];
-    table.push([depName, from, '→', expect]);
+    upgradeDepsTable.push([depName, from, '→', expect]);
   });
-  console.log('* Update');
-  console.log(table.toString());
-  console.log('* Install');
-  console.log(additionsDeps);
-  console.log('* Deprecated');
-  console.log(deprecatedDeps);
+  additionsDeps.forEach(depName => additionsDepsTable.push([depName, '^3.1.1']));
+  console.log('\n* Install\n');
+  console.log(chalk.green(additionsDepsTable.toString()));
+  console.log('\n* Upgrade\n');
+  console.log(chalk.blue(upgradeDepsTable.toString()));
+  console.log('\n* Uninstall\n');
+  console.log(chalk.red(deprecatedDeps.join('\n')));
+  console.log('\n');
+
+  const pkgs = Object.keys(upgradeDeps).map(depName => {
+    const [, expect] = upgradeDeps[depName];
+    return `${depName}@${expect}`;
+  });
+
+  const {theme} = await inquirer.prompt([{
+    type: 'rawlist',
+    name: 'theme',
+    message: 'Do you need to install/uninstall/upgrade these dependencies automatically?',
+    choices: [
+      'Yes (use npm)',
+      'Yes (use yarn)',
+      'No'
+    ]
+  }]);
+
+  let bin;
+  if (theme === 'Yes (use npm)') {
+    bin = 'npm';
+  } else if (theme === 'Yes (use yarn)') {
+    bin = 'yarn';
+  }
+
+  console.log(chalk.gray(`\n> ${bin} install ${pkgs.concat(additionsDeps).join(' ')}\n`));
+  await execa(bin, ['install', ...pkgs.concat(additionsDeps)], {
+    stdio: 'inherit',
+    stripEof: false
+  });
+
+  console.log(chalk.gray(`\n> ${bin} uninstall ${deprecatedDeps.join(' ')}\n`));
+  await execa(bin, ['uninstall', ...deprecatedDeps], {
+    stdio: 'inherit',
+    stripEof: false
+  });
 }
 
 /**
@@ -186,7 +236,7 @@ async function checkDependencies(targetDir) {
  * --cpus=1  // specify cpus cores to use
  */
 async function bootstrap() {
-  const dir = process.argv[2];
+  const dir = process.argv[2] || 'src';
   const args = require('yargs-parser')(process.argv.slice(3));
   if (process.env.NODE_ENV !== 'local') {
     // check for git status
@@ -215,7 +265,7 @@ async function bootstrap() {
 
   await checkDependencies(dir);
 
-  console.log('----------- Thanks for using taro-2-to-3 -----------');
+  console.log('\n----------- Thanks for using taro-2-to-3 -----------');
 }
 
 module.exports = {

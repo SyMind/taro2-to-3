@@ -21,8 +21,10 @@
   },
   "homepage": "https://github.com/SyMind/taro2-to-3#readme",
   "dependencies": {
+    "@npmcli/arborist": "^2.2.6",
     "chalk": "^4.1.0",
     "execa": "^5.0.0",
+    "inquirer": "^8.0.0",
     "is-git-clean": "^1.1.0",
     "jscodeshift": "^0.11.0",
     "read-pkg-up": "^7.0.1",
