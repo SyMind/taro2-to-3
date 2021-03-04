@@ -226,7 +226,7 @@ async function checkDependencies(targetDir) {
     bin = 'yarn';
   }
 
-  if (!bin) {
+  if (bin) {
     console.log(chalk.gray(`\n> ${bin} install ${pkgs.concat(additionsDeps).join(' ')}\n`));
     await execa(bin, ['install', ...pkgs.concat(additionsDeps)], {
       stdio: 'inherit',
