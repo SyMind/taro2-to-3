@@ -1,10 +1,14 @@
 {
   "name": "taro2-to-3",
-  "version": "1.0.0",
+  "version": "0.0.1-alpha.1",
   "description": "taro 2.x 项目转换为 taro 3.x 项目",
   "bin": {
     "taro-2-to-3": "./bin/cli.js"
   },
+  "files": [
+    "bin",
+    "transforms"
+  ],
   "main": "index.js",
   "scripts": {
     "test": "jest"
@@ -13,13 +17,16 @@
     "type": "git",
     "url": "git+https://github.com/SyMind/taro2-to-3.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["taro", "codemod"],
+  "author": "SyMind",
+  "license": "MIT",
+  "engines": {
+    "node": ">=8.0.0"
+  },
   "bugs": {
     "url": "https://github.com/SyMind/taro2-to-3/issues"
   },
-  "homepage": "https://github.com/SyMind/taro2-to-3#readme",
+  "homepage": "https://github.com/SyMind/taro2-to-3#README.md",
   "dependencies": {
     "@npmcli/arborist": "^2.2.6",
     "chalk": "^4.1.0",
