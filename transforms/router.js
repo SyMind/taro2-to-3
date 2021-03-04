@@ -2,7 +2,7 @@ module.exports = function (file, api, options) {
   const j = api.jscodeshift;
   const root = j(file.source);
 
-  const TaroUtils = require('./utils/TaroUtils')(j);
+  const TaroUtils = require('./TaroUtils')(j);
 
   const taroImportPaths = root
     .find(j.ImportDeclaration, {
