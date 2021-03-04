@@ -8,7 +8,8 @@ const tests = [
   'default-export-jsx-element',
   'multiple-specifiers-import',
   'default-and-multiple-specifiers-import',
-  'comment'
+  'comment',
+  'allready'
 ];
 
 tests.forEach(test => {

@@ -38,10 +38,29 @@ module.exports = function (file, api, options) {
   }
   const taroPath = taroImportPaths.paths()[0];
 
-  const isDefaultImport = taroPath.value.specifiers.some(
+  const reactImportPaths = root
+    .find(j.ImportDeclaration, {
+      type: 'ImportDeclaration'
+    })
+    .filter(path => (
+      (
+        path.value.source.type === 'Literal' ||
+        path.value.source.type === 'StringLiteral'
+      ) && path.value.source.value === 'react'
+    ));
+
+  const reactPath = reactImportPaths.paths()[0];
+
+  const isTaroDefaultImport = taroPath.value.specifiers.some(
     specifier =>
       specifier.type === 'ImportDefaultSpecifier' &&
       specifier.local.name === 'Taro'
+  );
+
+  const isReactDefaultImport = !!reactPath && reactPath.value.specifiers.some(
+    specifier =>
+      specifier.type === 'ImportDefaultSpecifier' &&
+      specifier.local.name === 'React'
   );
 
   const reactImportSpecifiers = [];
@@ -69,7 +88,7 @@ module.exports = function (file, api, options) {
     .find(j.JSXElement)
     .size() > 0;
     
-  if (isDefaultImport && isTaroImportUsed) {
+  if (isTaroDefaultImport && isTaroImportUsed) {
     const taroUsedApis = root
       .find(j.MemberExpression, {
         object: {
@@ -97,8 +116,12 @@ module.exports = function (file, api, options) {
     taroImportSpecifiers.unshift(j.importDefaultSpecifier(j.identifier('Taro')));
   }
     
-  if (shouldImportReact) {
+  if (shouldImportReact && !isReactDefaultImport) {
     reactImportSpecifiers.unshift(j.importDefaultSpecifier(j.identifier('React')));
+  }
+
+  if (reactImportSpecifiers.length === 0) {
+    return;
   }
 
   const imports = [];
