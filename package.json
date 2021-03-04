@@ -1,9 +1,9 @@
 {
   "name": "taro2-to-3",
-  "version": "0.0.1-alpha.1",
+  "version": "0.0.1-alpha.3",
   "description": "taro 2.x 项目转换为 taro 3.x 项目",
   "bin": {
-    "taro-2-to-3": "./bin/cli.js"
+    "taro2-to-3": "./bin/cli.js"
   },
   "files": [
     "bin",

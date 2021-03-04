@@ -12,10 +12,10 @@
 
 ```bash
 # 全局安装
-npm i -g taro-2-to-3
+npm i -g taro2-to-3
 # or for yarn user
-#  yarn global add @ant-design/codemod-v4
-taro-2-to-3
+#  yarn global add taro2-to-3
+taro2-to-3
 ```
 
 ## TODO
