@@ -4,6 +4,16 @@ module.exports = function (file, api, options) {
   const j = api.jscodeshift;
   const root = j(file.source);
 
+  const pages = typeof options.pages === 'string'
+    ? options.pages.split(',')
+    : [];
+
+  const isPage = pages.some(p => file.path.split('.').slice(0, -1).join('.').endsWith(p));
+
+  if (!isPage) {
+    return;
+  }
+
   const exportDefaultPaths = root.find(j.ExportDefaultDeclaration, {
     type: 'ExportDefaultDeclaration'
   });
@@ -12,8 +22,22 @@ module.exports = function (file, api, options) {
     return;
   }
 
+  const configFilePath = file.path
+    .split('.')
+    .slice(0, -1)
+    .concat('config.js')
+    .join('.');
+
+  let source;
+  let configFile = j.file(
+    j.program([
+      j.exportDefaultDeclaration(
+        j.objectExpression([])
+      )
+    ])
+  );
+
   const exportDefaultPath = exportDefaultPaths.paths()[0];
-    
   if (
     exportDefaultPath.value.declaration.type === 'ClassDeclaration' &&
         exportDefaultPath.value.declaration.superClass.name === 'Component'
@@ -24,42 +48,35 @@ module.exports = function (file, api, options) {
       type: 'ClassProperty',
       key: { name: 'config' }
     });
-        
-    if (configPath.size() === 0) {
-      return;
-    }
 
-    const objectExpression = configPath.paths()[0].value.value;
+    if (configPath.size() !== 0) {
+      const objectExpression = configPath.paths()[0].value.value;
 
-    const configFile = j.file(
-      j.program([
-        j.exportDefaultDeclaration(objectExpression)
-      ])
-    );
-    const configFilePath = file.path
-      .split('.')
-      .slice(0, -1)
-      .concat('config.js')
-      .join('.');
+      configFile = j.file(
+        j.program([
+          j.exportDefaultDeclaration(objectExpression)
+        ])
+      );
 
-    const configSource = j(configFile).toSource();
-    configPath.remove();
+      configPath.remove();
 
-    const rootSource = root.toSource(options);
-
-    if (process.env.NODE_ENV === 'test') {
-      const path = require('path');
-      return [
-        rootSource,
-        `// ${path.basename(configFilePath)}`,
-        '/*',
-        configSource,
-        '*/'
-      ].join('\n');
-    } else {
-      fs.writeFileSync(configFilePath, j(configFile).toSource());
+      source = root.toSource(options);
     }
   }
-    
-  return root.toSource(options);
+
+  const configSource = j(configFile).toSource();
+  if (process.env.NODE_ENV === 'test') {
+    const path = require('path');
+    return [
+      source,
+      `// ${path.basename(configFilePath)}`,
+      '/*',
+      configSource,
+      '*/'
+    ].filter(x => !!x).join('\n');
+  } else {
+    fs.writeFileSync(configFilePath, j(configFile).toSource());
+  }
+
+  return source;
 };

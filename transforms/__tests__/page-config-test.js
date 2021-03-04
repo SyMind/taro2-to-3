@@ -4,7 +4,8 @@ jest.autoMockOff();
 const defineTest = require('jscodeshift/dist/testUtils').defineTest;
 
 const tests = [
-  'class-property'
+  'class-component-with-config-property',
+  'class-component'
 ];
 
 tests.forEach(test => {
@@ -12,7 +13,11 @@ tests.forEach(test => {
     __dirname,
     'page-config',
     {
-      quote: 'single'
+      quote: 'single',
+      pages: [
+        'page-config/class-component-with-config-property.input',
+        'page-config/class-component.input'
+      ].join(',')
     },
     `page-config/${test}`
   );

@@ -1,3 +1,5 @@
+#! /usr/bin/env node
+
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -13,6 +15,7 @@ const jscodeshiftBin = require.resolve('.bin/jscodeshift');
 const taroDeps = require('./taroDeps');
 
 const transformersDir = path.join(__dirname, '../transforms');
+const Project = require('./project');
 
 // override default babylon parser config to enable `decorator-legacy`
 // https://github.com/facebook/jscodeshift/blob/master/parser/babylon.js
@@ -72,7 +75,11 @@ function getRunnerArgs(
   parser = 'babylon', // use babylon as default parser
   options = {}
 ) {
-  const args = ['--verbose=2', '--ignore-pattern=**/node_modules'];
+  const args = [
+    '--verbose=2',
+    '--ignore-pattern=**/node_modules',
+    '--quote=single'
+  ];
 
   // limit usage for cpus
   const cpus = options.cpus || Math.max(2, Math.ceil(os.cpus().length / 3));
@@ -97,7 +104,9 @@ function getRunnerArgs(
     args.push('--importStyles');
   }
 
-  args.push('--antdPkgNames=antd,@alipay/bigfish/antd');
+  if (options.pages) {
+    args.push(`--pages=${options.pages}`);
+  }
   return args;
 }
 
@@ -217,17 +226,19 @@ async function checkDependencies(targetDir) {
     bin = 'yarn';
   }
 
-  console.log(chalk.gray(`\n> ${bin} install ${pkgs.concat(additionsDeps).join(' ')}\n`));
-  await execa(bin, ['install', ...pkgs.concat(additionsDeps)], {
-    stdio: 'inherit',
-    stripEof: false
-  });
+  if (!bin) {
+    console.log(chalk.gray(`\n> ${bin} install ${pkgs.concat(additionsDeps).join(' ')}\n`));
+    await execa(bin, ['install', ...pkgs.concat(additionsDeps)], {
+      stdio: 'inherit',
+      stripEof: false
+    });
 
-  console.log(chalk.gray(`\n> ${bin} uninstall ${deprecatedDeps.join(' ')}\n`));
-  await execa(bin, ['uninstall', ...deprecatedDeps], {
-    stdio: 'inherit',
-    stripEof: false
-  });
+    console.log(chalk.gray(`\n> ${bin} uninstall ${deprecatedDeps.join(' ')}\n`));
+    await execa(bin, ['uninstall', ...deprecatedDeps], {
+      stdio: 'inherit',
+      stripEof: false
+    });
+  }
 }
 
 /**
@@ -236,10 +247,9 @@ async function checkDependencies(targetDir) {
  * --cpus=1  // specify cpus cores to use
  */
 async function bootstrap() {
-  const dir = process.argv[2] || 'src';
   const args = require('yargs-parser')(process.argv.slice(3));
   if (process.env.NODE_ENV !== 'local') {
-    // check for git status
+    // 检查 git 状态
     if (!args.force) {
       await ensureGitClean();
     } else {
@@ -256,20 +266,13 @@ async function bootstrap() {
     }
   }
 
-  // check for `path`
-  if (!dir || !fs.existsSync(dir)) {
-    console.log(chalk.yellow('Invalid dir:', dir, ', please pass a valid dir'));
-    process.exit(1);
-  }
-  await run(dir, args);
+  const project = new Project(process.cwd());
 
-  await checkDependencies(dir);
+  args.pages = project.pages.join(',');
+  await run(project.sourceRoot, args);
+  await checkDependencies(project.sourceRoot);
 
   console.log('\n----------- Thanks for using taro-2-to-3 -----------');
 }
 
-module.exports = {
-  bootstrap,
-  run,
-  getRunnerArgs
-};
+bootstrap();
