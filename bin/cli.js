@@ -266,7 +266,13 @@ async function bootstrap() {
     }
   }
 
-  const project = new Project(process.cwd());
+  let project;
+  try {
+    project = new Project(process.cwd());
+  } catch (error) {
+    console.log(chalk.red(error.message));
+    process.exit(1);
+  }
 
   args.pages = project.pages.join(',');
   await run(project.sourceRoot, args);

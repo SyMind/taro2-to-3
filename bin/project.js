@@ -11,7 +11,7 @@ class Project {
     this.configFilePath = path.join(this.dir, `${PROJECT_CONFIG_DIR}/index.js`);
 
     if (!fs.existsSync(this.configFilePath)) {
-      throw new Error('Not found taro config file');
+      throw new Error(`We cannot found your taro config file: ${this.configFilePath}`);
     }
 
     this.config = require(this.configFilePath)(merge);
