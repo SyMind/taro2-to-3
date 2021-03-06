@@ -1,6 +1,25 @@
 const path = require('path');
 const fs = require('fs');
 
+const getComponentConfigExpressionSelector = pageComponentName => ({
+  type: 'AssignmentExpression',
+  operator: '=',
+  left: {
+    type: 'MemberExpression',
+    object: {
+      type: 'Identifier',
+      name: pageComponentName
+    },
+    property: {
+      type: 'Identifier',
+      name: 'config'
+    }
+  },
+  right: {
+    type: 'ObjectExpression'
+  }
+});
+
 module.exports = function (file, api, options) {
   const j = api.jscodeshift;
   const root = j(file.source);
@@ -84,24 +103,10 @@ module.exports = function (file, api, options) {
       properties.remove();
       source = root.toSource(options);
     } else {
-      const expressions = root.find(j.AssignmentExpression, {
-        type: 'AssignmentExpression',
-        operator: '=',
-        left: {
-          type: 'MemberExpression',
-          object: {
-            type: 'Identifier',
-            name: pageComponentName
-          },
-          property: {
-            type: 'Identifier',
-            name: 'config'
-          }
-        },
-        right: {
-          type: 'ObjectExpression'
-        }
-      });
+      const expressions = root.find(
+        j.AssignmentExpression,
+        getComponentConfigExpressionSelector(pageComponentName)
+      );
 
       if (expressions.size() !== 0) {
         const objectExpression = expressions.paths()[0].value.right;
@@ -114,6 +119,29 @@ module.exports = function (file, api, options) {
         expressions.remove();
         source = root.toSource(options);
       }
+    }
+  } else if (
+    pageComponent.type === 'FunctionDeclaration' || (
+      pageComponent.type === 'VariableDeclarator' &&
+      pageComponent.init.type === 'ArrowFunctionExpression'
+    )
+  ) {
+    const pageComponentName = pageComponent.id.name;
+    const expressions = root.find(
+      j.AssignmentExpression,
+      getComponentConfigExpressionSelector(pageComponentName)
+    );
+
+    if (expressions.size() !== 0) {
+      const objectExpression = expressions.paths()[0].value.right;
+      configFile = j.file(
+        j.program([
+          j.exportDefaultDeclaration(objectExpression)
+        ])
+      );
+
+      expressions.remove();
+      source = root.toSource(options);
     }
   }
 
