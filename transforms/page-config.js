@@ -45,30 +45,75 @@ module.exports = function (file, api, options) {
     ])
   );
 
-  const exportDefaultPath = exportDefaultPaths.paths()[0];
+  let pageComponent = null;
+
+  let exportDefaultPath = exportDefaultPaths.paths()[0];
+  if (exportDefaultPath.value.declaration.type === 'Identifier') {
+    const bindings = exportDefaultPath.scope.getBindings()[exportDefaultPath.value.declaration.name];
+    if (bindings.length) {
+      pageComponent = bindings[0].parentPath.value;
+    }
+  } else {
+    pageComponent = exportDefaultPath.value.declaration;
+  }
+
+  if (!pageComponent) {
+    return;
+  }
+
   if (
-    exportDefaultPath.value.declaration.type === 'ClassDeclaration' &&
-        exportDefaultPath.value.declaration.superClass.name === 'Component'
+    pageComponent.type === 'ClassDeclaration' &&
+    pageComponent.superClass.name === 'Component'
   ) {
-    const pageClassPath = exportDefaultPath.value.declaration;
-        
-    const configPath = j(pageClassPath).find(j.ClassProperty, {
+    const pageComponentName = pageComponent.id.name;
+
+    const properties = j(pageComponent).find(j.ClassProperty, {
       type: 'ClassProperty',
-      key: { name: 'config' }
+      key: {
+        name: 'config'
+      }
     });
-
-    if (configPath.size() !== 0) {
-      const objectExpression = configPath.paths()[0].value.value;
-
+    if (properties.size() !== 0) {
+      const objectExpression = properties.paths()[0].value.value;
       configFile = j.file(
         j.program([
           j.exportDefaultDeclaration(objectExpression)
         ])
       );
 
-      configPath.remove();
-
+      properties.remove();
       source = root.toSource(options);
+    } else {
+      const expressions = root.find(j.AssignmentExpression, {
+        type: 'AssignmentExpression',
+        operator: '=',
+        left: {
+          type: 'MemberExpression',
+          object: {
+            type: 'Identifier',
+            name: pageComponentName
+          },
+          property: {
+            type: 'Identifier',
+            name: 'config'
+          }
+        },
+        right: {
+          type: 'ObjectExpression'
+        }
+      });
+
+      if (expressions.size() !== 0) {
+        const objectExpression = expressions.paths()[0].value.right;
+        configFile = j.file(
+          j.program([
+            j.exportDefaultDeclaration(objectExpression)
+          ])
+        );
+
+        expressions.remove();
+        source = root.toSource(options);
+      }
     }
   }
 
