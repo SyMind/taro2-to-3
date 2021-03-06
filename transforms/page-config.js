@@ -1,3 +1,4 @@
+const path = require('path');
 const fs = require('fs');
 
 module.exports = function (file, api, options) {
@@ -22,10 +23,17 @@ module.exports = function (file, api, options) {
     return;
   }
 
+  let ext = path.extname(file.path);
+  if (['.tsx', '.ts'].indexOf(ext) !== -1) {
+    ext = '.ts';
+  } else {
+    ext = '.js';
+  }
+
   const configFilePath = file.path
     .split('.')
     .slice(0, -1)
-    .concat('config.js')
+    .concat(['config', ext].join(''))
     .join('.');
 
   let source;
