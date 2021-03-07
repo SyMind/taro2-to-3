@@ -16,13 +16,15 @@ class Project {
 
     this.config = require(this.configFilePath)(merge);
 
-    this.entryFiles = Object.keys(TARO_ENVS)
-      .map(key => {
-        const env = TARO_ENVS[key];
-        return resolveScriptPath(path.join(this.sourceRoot, 'app'), env);
-      });
+    this.entryFiles = [...new Set(
+      Object.keys(TARO_ENVS)
+        .map(key => {
+          const env = TARO_ENVS[key];
+          return resolveScriptPath(path.join(this.sourceRoot, 'app'), env);
+        })
+    )];
 
-    this.entries = [...new Set(this.entryFiles)]
+    this.entries = this.entryFiles
       .map(f => path.join(dir, f))
       .map(p => new Entry(p));
 
@@ -34,6 +36,14 @@ class Project {
 
   get sourceRoot() {
     return this.config.sourceRoot;
+  }
+
+  transformEntry() {
+    for (let i = 0; i < this.entries.length; i++) {
+      const file = this.entryFiles[i];
+      const entry = this.entries[i];
+      fs.writeFileSync(file, entry.toSource());
+    }
   }
 }
 

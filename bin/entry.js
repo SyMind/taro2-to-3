@@ -1,20 +1,25 @@
 const fs = require('graceful-fs');
 const jscodeshift = require('jscodeshift');
 
+const j = jscodeshift.withParser('babylon');
+
 class Entry {
   constructor(entryFilePath) {
+    this.root = null;
+    this.pages = [];
+    this.entryComponent = null;
+  
     const code = fs.readFileSync(entryFilePath).toString();
-    const j = jscodeshift.withParser('babylon');
-    const root = j(code);
+    this.root = j(code);
     const TaroUtils = require('../transforms/TaroUtils')(j);
 
-    const taroClassComponents = TaroUtils.findTaroES6ClassDeclaration(root);
+    const taroClassComponents = TaroUtils.findTaroES6ClassDeclaration(this.root);
     if (taroClassComponents.size() === 0) {
       return;
     }
 
-    const entryComponent = taroClassComponents.at(0);
-    const properties = entryComponent.find(j.ClassProperty, {
+    this.entryComponent = taroClassComponents.at(0);
+    const properties = this.entryComponent.find(j.ClassProperty, {
       type: 'ClassProperty',
       key: {
         type: 'Identifier',
@@ -27,10 +32,8 @@ class Entry {
     if (properties.size() === 0) {
       return;
     }
+
     const configPath = properties.paths()[0];
-
-    this.pages = [];
-
     const mainPkgPagesPath = configPath.value.value.properties.find(x =>
       x.type === 'ObjectProperty' &&
       x.key.type === 'Identifier' &&
@@ -67,7 +70,44 @@ class Entry {
   }
 
   toSource() {
-    // TODO
+    if (!this.root || !this.entryComponent.size() === 0) {
+      return;
+    }
+
+    const exportDefaultPaths = this.root.find(j.ExportDefaultDeclaration, {
+      type: 'ExportDefaultDeclaration'
+    });
+
+    if (exportDefaultPaths.size() !== 0) {
+      return;
+    }
+
+    const expressions = this.root.find(j.ExpressionStatement, {
+      expression: {
+        type: 'CallExpression',
+        callee: {
+          type: 'MemberExpression',
+          object: {
+            type: 'Identifier',
+            name: 'Taro'
+          },
+          property: {
+            type: 'Identifier',
+            name: 'render'
+          }
+        }
+      }
+    });
+    expressions.remove();
+
+    const entryComponentName = this.entryComponent.paths()[0].value.id.name;
+    this.root.get().node.program.body.push(
+      j.exportDefaultDeclaration(
+        j.identifier(entryComponentName)
+      )
+    );
+
+    return this.root.toSource();
   }
 }
 

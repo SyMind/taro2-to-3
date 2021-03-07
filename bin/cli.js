@@ -273,6 +273,7 @@ async function bootstrap() {
     console.log(chalk.red(error.message));
     process.exit(1);
   }
+  project.transformEntry();
 
   args.pages = project.pages.join(',');
   await run(project.sourceRoot, args);
