@@ -33,8 +33,8 @@ class Entry {
       return;
     }
 
-    const configPath = properties.paths()[0];
-    const mainPkgPagesPath = configPath.value.value.properties.find(x =>
+    this.configPath = properties.paths()[0];
+    const mainPkgPagesPath = this.configPath.value.value.properties.find(x =>
       x.type === 'ObjectProperty' &&
       x.key.type === 'Identifier' &&
       x.key.name === 'pages' &&
@@ -45,7 +45,7 @@ class Entry {
       this.pages = this.pages.concat(mainPkgPages);
     }
 
-    const subPkgsPath = configPath.value.value.properties.find(x =>
+    const subPkgsPath = this.configPath.value.value.properties.find(x =>
       x.type === 'ObjectProperty' &&
       x.key.type === 'Identifier' &&
       x.key.name === 'subPackages' &&
@@ -69,9 +69,13 @@ class Entry {
     }
   }
 
-  toSource() {
+  transform() {
     if (!this.root || !this.entryComponent.size() === 0) {
       return;
+    }
+
+    if (this.configPath) {
+      j(this.configPath).remove();
     }
 
     const exportDefaultPaths = this.root.find(j.ExportDefaultDeclaration, {
