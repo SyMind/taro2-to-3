@@ -47,7 +47,7 @@ pageConfigTests.forEach(test => {
       transform,
       {
         quote: 'single',
-        pages: `page-config/${test.split('.').slice(0, -1).join('.')}`
+        pages: `page-config/${test.split('.').slice(0, -2).join('.')}`
       },
       {
         path: inputPath,
