@@ -2,15 +2,23 @@ const fs = require('graceful-fs');
 const jscodeshift = require('jscodeshift');
 
 const j = jscodeshift.withParser('babylon');
+const {TARO_ENVS} = require('./constants');
 
 class Entry {
   constructor(entryFilePath) {
+    this.entryFilePath = entryFilePath;
     this.root = null;
     this.pages = [];
     this.entryComponent = null;
+    this.env = null;
+
+    const subs = entryFilePath.split('.');
+    if (subs.length > 3) {
+      this.env = Object.values(TARO_ENVS).find(e => e === subs[subs.length - 2]);
+    }
   
-    const code = fs.readFileSync(entryFilePath).toString();
-    this.root = j(code);
+    this.code = fs.readFileSync(entryFilePath).toString();
+    this.root = j(this.code);
     const TaroUtils = require('../transforms/TaroUtils')(j);
 
     const taroClassComponents = TaroUtils.findTaroES6ClassDeclaration(this.root);
@@ -72,10 +80,6 @@ class Entry {
   transform() {
     if (!this.root || !this.entryComponent.size() === 0) {
       return;
-    }
-
-    if (this.configPath) {
-      j(this.configPath).remove();
     }
 
     const exportDefaultPaths = this.root.find(j.ExportDefaultDeclaration, {

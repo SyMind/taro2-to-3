@@ -1,7 +1,8 @@
 const path = require('path');
 const fs = require('fs');
+const {TARO_ENVS} = require('../bin/constants');
 
-const getComponentConfigExpressionSelector = pageComponentName => ({
+const getConfigExpressionSelector = pageComponentName => ({
   type: 'AssignmentExpression',
   operator: '=',
   left: {
@@ -22,14 +23,39 @@ const getComponentConfigExpressionSelector = pageComponentName => ({
 
 module.exports = function (file, api, options) {
   const j = api.jscodeshift;
+  const TaroUtils = require('./TaroUtils')(j);
+
+  const readConfigFromComments = (root, basename) => {
+    const comments = root.paths()[0].value.program.body[0].comments;
+    root.paths()[0].value.program.body[0].comments = [];
+
+    if (comments) {
+      let commentBlock;
+      for (let i = 1; i < comments.length; i++) {
+        if (
+          comments[i - 1].type === 'CommentLine' &&
+          comments[i - 1].value.trim() === basename
+        ) {
+          commentBlock = comments[i];
+        }
+      }
+
+      if (commentBlock) {
+        return j(commentBlock.value);
+      }
+    }
+  };
+
   const root = j(file.source);
 
   const pages = typeof options.pages === 'string'
     ? options.pages.split(',')
     : [];
-
-  const isPage = pages.some(p => file.path.split('.').slice(0, -1).join('.').endsWith(p));
-
+  let pathSubs = file.path.split('.').slice(0, -1);
+  if (Object.values(TARO_ENVS).some(e => e === pathSubs[pathSubs.length - 1])) {
+    pathSubs = pathSubs.slice(0, -1);
+  }
+  const isPage = pages.some(p => pathSubs.join('.').endsWith(p));
   if (!isPage) {
     return;
   }
@@ -49,17 +75,21 @@ module.exports = function (file, api, options) {
     ext = '.js';
   }
 
-  const configFilePath = file.path
-    .split('.')
-    .slice(0, -1)
-    .concat(['config', ext].join(''))
-    .join('.');
+  let configFilePathSubs = file.path.split('.').slice(0, -1);
+  const last = configFilePathSubs[configFilePathSubs.length - 1];
+  let env;
+  if (Object.values(TARO_ENVS).some(e => last === e)) {
+    configFilePathSubs = configFilePathSubs.slice(0, -1);
+    env = last;
+  }
+  const configFilePath = configFilePathSubs.concat(['config', ext].join('')).join('.');
 
   let source;
+  let objectExpression = j.objectExpression([]);
   let configFile = j.file(
     j.program([
       j.exportDefaultDeclaration(
-        j.objectExpression([])
+        objectExpression
       )
     ])
   );
@@ -93,7 +123,7 @@ module.exports = function (file, api, options) {
       }
     });
     if (properties.size() !== 0) {
-      const objectExpression = properties.paths()[0].value.value;
+      objectExpression = properties.paths()[0].value.value;
       configFile = j.file(
         j.program([
           j.exportDefaultDeclaration(objectExpression)
@@ -105,11 +135,11 @@ module.exports = function (file, api, options) {
     } else {
       const expressions = root.find(
         j.AssignmentExpression,
-        getComponentConfigExpressionSelector(pageComponentName)
+        getConfigExpressionSelector(pageComponentName)
       );
 
       if (expressions.size() !== 0) {
-        const objectExpression = expressions.paths()[0].value.right;
+        objectExpression = expressions.paths()[0].value.right;
         configFile = j.file(
           j.program([
             j.exportDefaultDeclaration(objectExpression)
@@ -129,11 +159,11 @@ module.exports = function (file, api, options) {
     const pageComponentName = pageComponent.id.name;
     const expressions = root.find(
       j.AssignmentExpression,
-      getComponentConfigExpressionSelector(pageComponentName)
+      getConfigExpressionSelector(pageComponentName)
     );
 
     if (expressions.size() !== 0) {
-      const objectExpression = expressions.paths()[0].value.right;
+      objectExpression = expressions.paths()[0].value.right;
       configFile = j.file(
         j.program([
           j.exportDefaultDeclaration(objectExpression)
@@ -145,18 +175,37 @@ module.exports = function (file, api, options) {
     }
   }
 
-  const configSource = j(configFile).toSource();
+  const configSource = j(configFile).toSource(options);
   if (process.env.NODE_ENV === 'test') {
-    const path = require('path');
+    const configFileBasename = path.basename(configFilePath);
+    const existedConfigRoot = readConfigFromComments(root, configFileBasename);
+
+    if (existedConfigRoot) {
+      TaroUtils.mergeTaroPageConfig(existedConfigRoot, objectExpression, env);
+      return [
+        root.toSource(options),
+        `// ${configFileBasename}`,
+        '/*',
+        existedConfigRoot.toSource(options).trim(),
+        '*/'
+      ].filter(x => !!x).join('\n');
+    }
+
     return [
       source,
-      `// ${path.basename(configFilePath)}`,
+      `// ${configFileBasename}`,
       '/*',
       configSource,
       '*/'
     ].filter(x => !!x).join('\n');
   } else {
-    fs.writeFileSync(configFilePath, j(configFile).toSource());
+    if (fs.existsSync(configFilePath)) {
+      const existedConfigRoot = j(fs.readFileSync(configFilePath, 'utf-8'));
+      TaroUtils.mergeTaroPageConfig(existedConfigRoot, objectExpression, env);
+      fs.writeFileSync(configFilePath, existedConfigRoot.toSource(options));
+    } else {
+      fs.writeFileSync(configFilePath, j(configFile).toSource(options));
+    }
   }
 
   return source;

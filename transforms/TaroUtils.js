@@ -61,8 +61,108 @@ module.exports = function(j) {
     }
     return classDeclarations;
   };
+
+  const mergeTaroPageConfig = (root, config, env) => {
+    const exportDefaultPaths = root.find(j.ExportDefaultDeclaration, {
+      type: 'ExportDefaultDeclaration'
+    });
+
+    if (exportDefaultPaths.size() === 0) {
+      root.paths()[0].value.program.body.push(
+        j.exportDefaultDeclaration(config)
+      );
+    } else {
+      const exportDefaultPath = exportDefaultPaths.paths()[0];
+      if (exportDefaultPath.value.declaration.type === 'Identifier') {
+        if (env) {
+          const ifStatement = j.ifStatement(
+            j.binaryExpression(
+              '===',
+              j.memberExpression(
+                j.memberExpression(
+                  j.identifier('process'),
+                  j.identifier('env')
+                ),
+                j.identifier('TARO_ENV')
+              ),
+              j.stringLiteral(env)
+            ),
+            j.blockStatement([
+              j.expressionStatement(
+                j.assignmentExpression(
+                  '=',
+                  j.identifier('config'),
+                  config
+                )
+              )
+            ])
+          );
+          exportDefaultPath.insertBefore(ifStatement);
+        } else {
+          const name = exportDefaultPath.value.declaration.name;
+          const variables = root.find(j.VariableDeclarator, {
+            type: 'VariableDeclarator',
+            id: {
+              type: 'Identifier',
+              name
+            }
+          });
+          if (variables.size() !== 0) {
+            const variable = variables.paths()[0];
+            variable.value.init = config;
+          } else {
+            throw Error(`Not found VariableDeclarator: ${name}`);
+          }
+        }
+      } else if (exportDefaultPath.value.declaration.type === 'ObjectExpression') {
+        const objectExpression = exportDefaultPath.value.declaration;
+
+        if (env) {
+          const variable = j.variableDeclaration(
+            'let',
+            [
+              j.variableDeclarator(
+                j.identifier('config'),
+                objectExpression
+              )
+            ]
+          );
+
+          const ifStatement = j.ifStatement(
+            j.binaryExpression(
+              '===',
+              j.memberExpression(
+                j.memberExpression(
+                  j.identifier('process'),
+                  j.identifier('env')
+                ),
+                j.identifier('TARO_ENV')
+              ),
+              j.stringLiteral(env)
+            ),
+            j.blockStatement([
+              j.expressionStatement(
+                j.assignmentExpression(
+                  '=',
+                  j.identifier('config'),
+                  config
+                )
+              )
+            ])
+          );
+
+          exportDefaultPath.value.declaration = j.identifier('config');
+          root.paths()[0].value.program.body.unshift(ifStatement);
+          root.paths()[0].value.program.body.unshift(variable);
+        } else {
+          exportDefaultPath.value.declaration = config;
+        }
+      }
+    }
+  };
     
   return {
-    findTaroES6ClassDeclaration
+    findTaroES6ClassDeclaration,
+    mergeTaroPageConfig
   };
 };

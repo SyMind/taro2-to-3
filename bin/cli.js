@@ -275,7 +275,7 @@ async function bootstrap() {
   }
   project.transformEntry();
 
-  args.pages = project.pages.join(',');
+  args.pages = project.pages.concat(`${project.sourceRoot}/app`).join(',');
   await run(project.sourceRoot, args);
   await checkDependencies(project.sourceRoot);
 
