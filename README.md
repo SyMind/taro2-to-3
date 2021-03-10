@@ -28,6 +28,11 @@ taro2-to-3
 - [x] 更新 taro import 相关的 api
 - [x] 更新路由 api
 
+## 计划
+
+1. 3-14 日前完成 TODO 列表中的左右的所有功能，发布 beta 版本；
+2. 3-20 日前发布正式版本，并发布到 taro 物料中心。
+
 ## Codemod 脚本包括
 
 ### `taro-imports`
