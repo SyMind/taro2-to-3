@@ -29,6 +29,7 @@ tests.forEach(test => {
 });
 
 const pageConfigTests = [
+  'h5-config.input.h5.js',
   'merge-h5-config.input.h5.js',
   'merge-swan-config.input.swan.js'
 ];
