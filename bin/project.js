@@ -61,26 +61,6 @@ class Project {
       );
     }
 
-    const sassObjProp = root.find(j.ObjectProperty, {
-      type: 'ObjectProperty',
-      key: {
-        type: 'Identifier',
-        name: 'sass'
-      }
-    });
-    if (sassObjProp.size() !== 0) {
-      const dataProp = sassObjProp.find(j.ObjectProperty, {
-        type: 'ObjectProperty',
-        key: {
-          type: 'Identifier',
-          name: 'data'
-        }
-      });
-      if (dataProp.size() !== 0) {
-        dataProp.paths()[0].value.key.name = 'prependData';
-      }
-    }
-
     const babelObjProp = root.find(j.ObjectProperty, {
       type: 'ObjectProperty',
       key: {
@@ -90,6 +70,17 @@ class Project {
     });
     if (babelObjProp.size() !== 0) {
       babelObjProp.remove();
+    }
+
+    const sassLoaderOptionObjProp = root.find(j.ObjectProperty, {
+      type: 'ObjectProperty',
+      key: {
+        type: 'Identifier',
+        name: 'sassLoaderOption'
+      }
+    });
+    if (babelObjProp.size() !== 0) {
+      sassLoaderOptionObjProp.paths()[0].value.key.name = 'prependData';
     }
 
     fs.writeFileSync(this.configFilePath, root.toSource());

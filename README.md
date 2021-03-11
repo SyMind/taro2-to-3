@@ -1,10 +1,10 @@
 # taro2-to-3（alpha）
 
-一组帮助你将 taro 2.x 项目升级到 taro 3.x 项目的 codemod 脚本集合，基于 jscodeshift 构建。
+帮助你将 taro 2.x 项目升级到 taro 3.x 项目，基于 jscodeshift 构建。
 
 ## 动机
 
-愿将 taro 2.x 项目升级到 taro 3.x 项目的过程变得轻松愉悦。
+想要将 taro 2.x 项目升级到 taro 3.x 项目的过程变得轻松愉悦。
 
 # 使用
 
@@ -18,22 +18,12 @@ npm i -g taro2-to-3
 taro2-to-3
 ```
 
-## TODO
-
-- [x] 解析 taro 2.x 项目配置，根据其中的 pages 配置项解析页面组件
-- [x] 更新 app.js
-- [x] 升级 taro 2.x 项目配置，如 framework、sass 等配置
-- [ ] 添加或修改 babel.config.js 的配置，taro 3.x 中使用 @babel/preset-typescript，若使用 const enum 需要添加插件，https://babeljs.io/docs/en/babel-plugin-transform-typescript#caveats
-- [x] 更新依赖
-- [x] 更新 taro import 相关的 api
-- [x] 更新路由 api
-
 ## 计划
 
 1. 3-14 日前完成 TODO 列表中的左右的所有功能，发布 beta 版本；
 2. 3-20 日前发布正式版本，并发布到 taro 物料中心。
 
-## Codemod 脚本包括
+## 脚本包括
 
 ### `taro-imports`
 
