@@ -5,7 +5,9 @@ const defineTest = require('jscodeshift/dist/testUtils').defineTest;
 
 const tests = [
   'class-component',
-  'function-component'
+  'function-component',
+  'class-component-updated-by-taro-imports',
+  'function-component-updated-by-taro-imports'
 ];
 
 tests.forEach(test => {

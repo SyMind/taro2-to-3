@@ -1,5 +1,5 @@
 module.exports = function(j) {
-  const findTaroComponentNameByParent = (path, parentClassName) => {
+  const findPkgComponentNameByParent = (path, pkg, parentClassName) => {
     const taroImportDeclaration = path
       .find(j.ImportDeclaration, {
         type: 'ImportDeclaration'
@@ -8,7 +8,7 @@ module.exports = function(j) {
         (
           path.value.source.type === 'Literal' ||
           path.value.source.type === 'StringLiteral'
-        ) && path.value.source.value === '@tarojs/taro'
+        ) && path.value.source.value === pkg
       ));
     
     const componentImportSpecifier = taroImportDeclaration
@@ -27,8 +27,8 @@ module.exports = function(j) {
       : undefined;
   };
     
-  const findTaroES6ClassDeclarationByParent = (path, parentClassName) => {
-    const componentImport = findTaroComponentNameByParent(path, parentClassName);
+  const findComponentES6ClassDeclarationByParent = (path, pkg, parentClassName) => {
+    const componentImport = findPkgComponentNameByParent(path, pkg, parentClassName);
     
     const selector = componentImport
       ? {
@@ -54,10 +54,10 @@ module.exports = function(j) {
     return path.find(j.ClassDeclaration, selector);
   };
     
-  const findTaroES6ClassDeclaration = path => {
-    let classDeclarations = findTaroES6ClassDeclarationByParent(path, 'Component');
+  const findComponentES6ClassDeclaration = (path, pkg) => {
+    let classDeclarations = findComponentES6ClassDeclarationByParent(path, pkg, 'Component');
     if (classDeclarations.size() === 0) {
-      classDeclarations = findTaroES6ClassDeclarationByParent(path, 'PureComponent');
+      classDeclarations = findComponentES6ClassDeclarationByParent(path, pkg, 'PureComponent');
     }
     return classDeclarations;
   };
@@ -162,7 +162,7 @@ module.exports = function(j) {
   };
     
   return {
-    findTaroES6ClassDeclaration,
+    findComponentES6ClassDeclaration,
     mergeTaroPageConfig
   };
 };
