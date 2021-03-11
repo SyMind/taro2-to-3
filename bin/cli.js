@@ -142,6 +142,19 @@ async function transform(transformer, parser, filePath, options) {
   }
 }
 
+async function checkBabelConfig(projectDir) {
+  try {
+    if (!fs.existsSync(path.join(projectDir, 'babel.config.js'))) {
+      fs.copyFileSync(
+        path.join(__dirname, 'templates/babel.config.js'),
+        path.join(projectDir, 'babel.config.js')
+      );
+    }
+  } catch (error) {
+    console.log(error.message);
+  }
+}
+
 async function checkDependencies(targetDir) {
   const cwd = path.join(process.cwd(), targetDir);
   const closetPkgJson = await readPkgUp({ cwd });
@@ -266,9 +279,10 @@ async function bootstrap() {
     }
   }
 
+  const projectDir = process.cwd();
   let project;
   try {
-    project = new Project(process.cwd());
+    project = new Project(projectDir);
   } catch (error) {
     console.log(chalk.red(error.message));
     process.exit(1);
@@ -277,6 +291,7 @@ async function bootstrap() {
 
   args.pages = project.pages.concat(`${project.sourceRoot}/app`).join(',');
   await run(project.sourceRoot, args);
+  await checkBabelConfig(projectDir);
   await checkDependencies(project.sourceRoot);
 
   console.log('\n----------- Thanks for using taro-2-to-3 -----------');
