@@ -22,8 +22,8 @@ const Project = require('./project');
 const babylonConfig = path.join(__dirname, './babylon.config.json');
 
 const transformers = [
-  'taro-imports',
   'router',
+  'taro-imports',
   'page-config'
 ];
 
