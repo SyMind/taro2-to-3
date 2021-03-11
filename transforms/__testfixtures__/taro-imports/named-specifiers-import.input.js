@@ -1,4 +1,4 @@
-import { useRef } from '@tarojs/taro'
+import { useRef } from '@tarojs/taro';
 
 function usePersistFn(fn) {
   const fnRef = useRef(fn);

@@ -14,7 +14,12 @@ const REACT_APIS = [
   'useImperativeHandle',
   'useCallback',
   'useMemo',
-  'useContext'
+  'useContext',
+
+  // types
+  'FunctionComponent',
+  'FC',
+  'SFC'
 ];
 
 module.exports = function (file, api, options) {
