@@ -63,6 +63,8 @@ module.exports = {
     // '@tarojs/extend',
     // '@tarojs/taro-loader',
     '@tarojs/react',
-    '@tarojs/runtime'
+    '@tarojs/runtime',
+    'react',
+    'react-dom'
   ]
 };
