@@ -23,7 +23,7 @@ const getConfigExpressionSelector = pageComponentName => ({
 
 const ENV_ALTERNATION = Object.values(TARO_ENVS).join('|');
 const EXT_ALTERNATION = ['js', 'jsx', 'ts', 'tsx'].join('|');
-const REG_EXP_ENDING = `(?:.(${ENV_ALTERNATION}))?.(?:${EXT_ALTERNATION})`;
+const REG_EXP_ENDING = `(?:/index)?(?:.(${ENV_ALTERNATION}))?.(?:${EXT_ALTERNATION})`;
 
 function pagesToRegExps(pages) {
   const paths = typeof pages === 'string'
@@ -170,20 +170,41 @@ module.exports = function (file, api, options) {
     pageComponent.type === 'ClassDeclaration' &&
     pageComponent.superClass.name === 'Component'
   ) {
-    const pageComponentName = pageComponent.id.name;
+    const pageComponentName = pageComponent.id ? pageComponent.id.name : null;
+    if (pageComponentName) {
+      const properties = j(pageComponent).find(j.ClassProperty, {
+        type: 'ClassProperty',
+        key: {
+          name: 'config'
+        }
+      });
+      if (properties.size() !== 0) {
+        configObjExp = properties.paths()[0].value.value;
+        configFile = createConfigFile(env, configObjExp);
+        properties.remove();
+        source = root.toSource(options);
+      } else {
+        const expressions = root.find(
+          j.AssignmentExpression,
+          getConfigExpressionSelector(pageComponentName)
+        );
 
-    const properties = j(pageComponent).find(j.ClassProperty, {
-      type: 'ClassProperty',
-      key: {
-        name: 'config'
+        if (expressions.size() !== 0) {
+          configObjExp = expressions.paths()[0].value.right;
+          configFile = createConfigFile(env, configObjExp);
+          expressions.remove();
+          source = root.toSource(options);
+        }
       }
-    });
-    if (properties.size() !== 0) {
-      configObjExp = properties.paths()[0].value.value;
-      configFile = createConfigFile(env, configObjExp);
-      properties.remove();
-      source = root.toSource(options);
-    } else {
+    }
+  } else if (
+    pageComponent.type === 'FunctionDeclaration' || (
+      pageComponent.type === 'VariableDeclarator' &&
+      pageComponent.init.type === 'ArrowFunctionExpression'
+    )
+  ) {
+    const pageComponentName = pageComponent.id ? pageComponent.id.name : null;
+    if (pageComponentName) {
       const expressions = root.find(
         j.AssignmentExpression,
         getConfigExpressionSelector(pageComponentName)
@@ -195,24 +216,6 @@ module.exports = function (file, api, options) {
         expressions.remove();
         source = root.toSource(options);
       }
-    }
-  } else if (
-    pageComponent.type === 'FunctionDeclaration' || (
-      pageComponent.type === 'VariableDeclarator' &&
-      pageComponent.init.type === 'ArrowFunctionExpression'
-    )
-  ) {
-    const pageComponentName = pageComponent.id.name;
-    const expressions = root.find(
-      j.AssignmentExpression,
-      getConfigExpressionSelector(pageComponentName)
-    );
-
-    if (expressions.size() !== 0) {
-      configObjExp = expressions.paths()[0].value.right;
-      configFile = createConfigFile(env, configObjExp);
-      expressions.remove();
-      source = root.toSource(options);
     }
   }
 

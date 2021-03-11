@@ -7,11 +7,13 @@ const fs = require('fs');
 
 const tests = [
   'class-component',
+  'class-component-without-id',
   'class-component-with-config-property',
   'class-component-with-config-assignment',
   'class-component-export-default-identifier',
   'function-component',
   'function-component-with-config-assignment',
+  'arrow-function-component-without-id',
   'arrow-function-component-with-config-assignment',
   'merge-default-config'
 ];
@@ -22,7 +24,7 @@ tests.forEach(test => {
     'page-config',
     {
       quote: 'single',
-      pages: tests.map(t => `page-config/${t}.input`).join(',')
+      pages: `page-config/${test}.input`
     },
     `page-config/${test}`
   );
