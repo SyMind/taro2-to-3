@@ -11,6 +11,12 @@ module.exports = function(j) {
         ) && path.value.source.value === pkg
       ));
     
+    const importDefaultSpecifier = taroImportDeclaration
+      .find(j.ImportDefaultSpecifier, {
+        type: 'ImportDefaultSpecifier'
+      })
+      .at(0);
+    
     const componentImportSpecifier = taroImportDeclaration
       .find(j.ImportSpecifier, {
         type: 'ImportSpecifier',
@@ -21,28 +27,37 @@ module.exports = function(j) {
       })
       .at(0);
     
-    const paths = componentImportSpecifier.paths();
-    return paths.length
-      ? paths[0].value.local.name
+    const importDefaultPaths = importDefaultSpecifier.paths();
+    const pkgDefaultName = importDefaultPaths.length
+      ? importDefaultPaths[0].value.local.name
       : undefined;
+
+    const componentImportPaths = componentImportSpecifier.paths();
+    const componentName = componentImportPaths.length
+      ? componentImportPaths[0].value.local.name
+      : undefined;
+
+    return [pkgDefaultName, componentName];
   };
     
   const findComponentES6ClassDeclarationByParent = (path, pkg, parentClassName) => {
-    const componentImport = findPkgComponentNameByParent(path, pkg, parentClassName);
+    const [defaultImport, componentImport] = findPkgComponentNameByParent(path, pkg, parentClassName);
     
-    const selector = componentImport
-      ? {
+    let selector;
+    if (componentImport) {
+      selector = {
         superClass: {
           type: 'Identifier',
           name: componentImport
         }
-      }
-      : {
+      };
+    } else if (defaultImport) {
+      selector = {
         superClass: {
           type: 'MemberExpression',
           object: {
             type: 'Identifier',
-            name: 'Taro'
+            name: defaultImport
           },
           property: {
             type: 'Identifier',
@@ -50,13 +65,14 @@ module.exports = function(j) {
           }
         }
       };
+    }
     
-    return path.find(j.ClassDeclaration, selector);
+    return selector ? path.find(j.ClassDeclaration, selector) : null;
   };
     
   const findComponentES6ClassDeclaration = (path, pkg) => {
     let classDeclarations = findComponentES6ClassDeclarationByParent(path, pkg, 'Component');
-    if (classDeclarations.size() === 0) {
+    if (!classDeclarations || classDeclarations.size() === 0) {
       classDeclarations = findComponentES6ClassDeclarationByParent(path, pkg, 'PureComponent');
     }
     return classDeclarations;

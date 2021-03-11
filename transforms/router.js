@@ -31,7 +31,10 @@ module.exports = function (file, api, options) {
   }
 
   let taroPath = null;
-  if (taroImportPaths.size() !== 0) {
+  let shouldTransform = false;
+
+  // Handle function component.
+  if (taroImportPaths.size() > 0) {
     taroPath = taroImportPaths.paths()[0];
 
     const useRouterImport = taroPath.value.specifiers.find(
@@ -53,6 +56,8 @@ module.exports = function (file, api, options) {
       });
 
       if (useRouterUsed.size() > 0) {
+        shouldTransform = true;
+
         useRouterUsed.forEach(path => {
           j(path).replaceWith(
             j.memberExpression(
@@ -68,7 +73,7 @@ module.exports = function (file, api, options) {
         taroPath.value.specifiers = taroPath.value.specifiers
           .filter(specifier =>
             specifier.type !== 'ImportSpecifier' ||
-                specifier.imported.name !== 'useRouter'
+            specifier.imported.name !== 'useRouter'
           )
           .concat(
             j.importSpecifier(
@@ -79,21 +84,23 @@ module.exports = function (file, api, options) {
     }
 
     if (defaultImport) {
-      root
-        .find(j.CallExpression, {
-          type: 'CallExpression',
-          callee: {
-            object: {
-              type: 'Identifier',
-              name: 'Taro'
-            },
-            property: {
-              type: 'Identifier',
-              name: 'useRouter'
-            }
+      const useRouterCalls = root.find(j.CallExpression, {
+        type: 'CallExpression',
+        callee: {
+          object: {
+            type: 'Identifier',
+            name: 'Taro'
+          },
+          property: {
+            type: 'Identifier',
+            name: 'useRouter'
           }
-        })
-        .forEach(path => {
+        }
+      });
+      if (useRouterCalls.size() > 0) {
+        shouldTransform = true;
+
+        useRouterCalls.forEach(path => {
           j(path).replaceWith(
             j.memberExpression(
               j.memberExpression(
@@ -107,17 +114,16 @@ module.exports = function (file, api, options) {
             )
           );
         });
+      }
     }
   }
 
+  // Handle class component.
   const taroClassComponents = TaroUtils.findComponentES6ClassDeclaration(root, '@tarojs/taro');
   const reactClassComponents = TaroUtils.findComponentES6ClassDeclaration(root, 'react');
 
-  const classComponents = taroClassComponents.size() > 0
-    ? taroClassComponents
-    : reactClassComponents;
-
-  if (classComponents.size() > 0) {
+  const classComponents = taroClassComponents && taroClassComponents.size() > 0 ? taroClassComponents : reactClassComponents;
+  if (classComponents && classComponents.size() > 0) {
     let sholudImportGetCurrentInstance = false;
 
     classComponents.forEach(component => {
@@ -135,6 +141,8 @@ module.exports = function (file, api, options) {
       if (routerMemberExpression.size() === 0) {
         return;
       }
+
+      shouldTransform = true;
 
       sholudImportGetCurrentInstance = true;
       component.value.body.body.unshift(
@@ -185,5 +193,7 @@ module.exports = function (file, api, options) {
     }
   }
 
-  return root.toSource(options);
+  if (shouldTransform) {
+    return root.toSource(options);
+  }
 };

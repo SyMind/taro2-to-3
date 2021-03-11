@@ -7,7 +7,8 @@ const tests = [
   'class-component',
   'function-component',
   'class-component-updated-by-taro-imports',
-  'function-component-updated-by-taro-imports'
+  'function-component-updated-by-taro-imports',
+  'allready'
 ];
 
 tests.forEach(test => {
