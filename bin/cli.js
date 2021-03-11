@@ -287,6 +287,7 @@ async function bootstrap() {
     console.log(chalk.red(error.message));
     process.exit(1);
   }
+  project.transformConfig();
   project.transformEntry();
 
   args.pages = project.pages.concat(`${project.sourceRoot}/app`).join(',');

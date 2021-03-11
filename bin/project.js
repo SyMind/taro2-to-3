@@ -1,9 +1,12 @@
 const path = require('path');
 const fs = require('graceful-fs');
 const {merge} = require('lodash');
+const jscodeshift = require('jscodeshift');
 const {TARO_ENVS, PROJECT_CONFIG_DIR} = require('./constants');
 const {resolveScriptPath} = require('./utils');
 const Entry = require('./entry');
+
+const j = jscodeshift.withParser('babylon');
 
 class Project {
   constructor(dir) {
@@ -36,6 +39,60 @@ class Project {
 
   get sourceRoot() {
     return this.config.sourceRoot;
+  }
+
+  transformConfig() {
+    const source = fs.readFileSync(this.configFilePath, 'utf-8');
+    const root = j(source);
+
+    const projectNameObjProp = root.find(j.ObjectProperty, {
+      type: 'ObjectProperty',
+      key: {
+        type: 'Identifier',
+        name: 'projectName'
+      }
+    });
+    if (projectNameObjProp.size() !== 0) {
+      projectNameObjProp.insertBefore(
+        j.objectProperty(
+          j.identifier('framework'),
+          j.stringLiteral('react')
+        )
+      );
+    }
+
+    const sassObjProp = root.find(j.ObjectProperty, {
+      type: 'ObjectProperty',
+      key: {
+        type: 'Identifier',
+        name: 'sass'
+      }
+    });
+    if (sassObjProp.size() !== 0) {
+      const dataProp = sassObjProp.find(j.ObjectProperty, {
+        type: 'ObjectProperty',
+        key: {
+          type: 'Identifier',
+          name: 'data'
+        }
+      });
+      if (dataProp.size() !== 0) {
+        dataProp.paths()[0].value.key.name = 'prependData';
+      }
+    }
+
+    const babelObjProp = root.find(j.ObjectProperty, {
+      type: 'ObjectProperty',
+      key: {
+        type: 'Identifier',
+        name: 'babel'
+      }
+    });
+    if (babelObjProp.size() !== 0) {
+      babelObjProp.remove();
+    }
+
+    fs.writeFileSync(this.configFilePath, root.toSource());
   }
 
   transformEntry() {
