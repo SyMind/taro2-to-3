@@ -71,7 +71,7 @@ class Project {
         name: 'babel'
       }
     });
-    if (babelObjProp.size() !== 0) {
+    if (babelObjProp.size() > 0) {
       babelObjProp.remove();
     }
 
@@ -82,7 +82,7 @@ class Project {
         name: 'sassLoaderOption'
       }
     });
-    if (babelObjProp.size() !== 0) {
+    if (sassLoaderOptionObjProp.size() > 0) {
       sassLoaderOptionObjProp.paths()[0].value.key.name = 'prependData';
     }
 
