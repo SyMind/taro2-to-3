@@ -1,5 +1,4 @@
 module.exports = {
-  expectVersion: '^3.1.1',
   deprecated: [
     '@tarojs/utils',
     '@tarojs/async-await',
@@ -56,15 +55,27 @@ module.exports = {
     '@tarojs/with-weapp',
     '@tarojs/taro-h5'
   ],
-  additions: [
-    'babel-preset-taro',
-    // '@tarojs/shared',
-    // '@tarojs/api',
-    // '@tarojs/extend',
-    // '@tarojs/taro-loader',
-    '@tarojs/react',
-    '@tarojs/runtime',
-    'react',
-    'react-dom'
+  install: [
+    {
+      name: 'babel-preset-taro',
+      version: '^3.1.1',
+      dev: true
+    },
+    {
+      name: '@tarojs/react',
+      version: '^3.1.1'
+    },
+    {
+      name: '@tarojs/runtime',
+      version: '^3.1.1'
+    },
+    {
+      name: 'react',
+      version: '^16.10.0'
+    },
+    {
+      name: 'react-dom',
+      version: '^16.10.0'
+    }
   ]
 };

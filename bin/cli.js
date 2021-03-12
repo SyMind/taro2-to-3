@@ -167,14 +167,15 @@ async function checkDependencies(targetDir) {
   const { packageJson } = closetPkgJson;
   const upgradeDeps = Object.create(null);
   const deprecatedDeps = [];
-  const additionsDeps = taroDeps.additions;
+  const installDeps = taroDeps.install;
   dependencyProperties.forEach(property => {
     const deps = packageJson[property];
     if (!deps) {
       return;
     }
 
-    const {expectVersion, deprecated, upgrade} = taroDeps;
+    const expectVersion = '^3.1.1';
+    const {deprecated, upgrade} = taroDeps;
     deprecated.forEach(depName => {
       if (deps[depName]) {
         deprecatedDeps.push(depName);
@@ -207,7 +208,7 @@ async function checkDependencies(targetDir) {
     const [from, expect] = upgradeDeps[depName];
     upgradeDepsTable.push([depName, from, '→', expect]);
   });
-  additionsDeps.forEach(depName => additionsDepsTable.push([depName, '^3.1.1']));
+  installDeps.forEach(({name, version}) => additionsDepsTable.push([name, version]));
   console.log('\n* Install\n');
   console.log(chalk.green(additionsDepsTable.toString()));
   console.log('\n* Upgrade\n');
@@ -240,8 +241,16 @@ async function checkDependencies(targetDir) {
   }
 
   if (bin) {
-    console.log(chalk.gray(`\n> ${bin} install ${pkgs.concat(additionsDeps).join(' ')}\n`));
-    await execa(bin, ['install', ...pkgs.concat(additionsDeps)], {
+    const commonInstallDeps = installDeps.filter(d => !d.dev).map(d => d.name);
+    console.log(chalk.gray(`\n> ${bin} install ${pkgs.concat(commonInstallDeps).join(' ')}\n`));
+    await execa(bin, ['install', ...pkgs.concat(commonInstallDeps)], {
+      stdio: 'inherit',
+      stripEof: false
+    });
+
+    const devInstallDeps = installDeps.filter(d => d.dev).map(d => d.name);
+    console.log(chalk.gray(`\n> ${bin} install -D ${devInstallDeps.join(' ')}\n`));
+    await execa(bin, ['install', '-D', ...devInstallDeps], {
       stdio: 'inherit',
       stripEof: false
     });
