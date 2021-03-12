@@ -93,7 +93,10 @@ class Project {
     for (let i = 0; i < this.entries.length; i++) {
       const file = this.entryFiles[i];
       const entry = this.entries[i];
-      fs.writeFileSync(file, entry.transform());
+      const source = entry.transform();
+      if (source) {
+        fs.writeFileSync(file, source);
+      }
     }
   }
 }
