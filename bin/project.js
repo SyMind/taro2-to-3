@@ -34,7 +34,10 @@ class Project {
     this.pages = this.entries
       .map(e => e.pages)
       .reduce((r, ps) => r.concat(ps), [])
-      .map(p => `${this.sourceRoot}/${p}`);
+      .map(p => p[0] === '/'
+        ? `${this.sourceRoot}${p}`
+        : `${this.sourceRoot}/${p}`
+      );
   }
 
   get sourceRoot() {

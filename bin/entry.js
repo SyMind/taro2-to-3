@@ -21,8 +21,8 @@ class Entry {
     this.root = j(this.code);
     const TaroUtils = require('../transforms/TaroUtils')(j);
 
-    const taroClassComponents = TaroUtils.findTaroES6ClassDeclaration(this.root);
-    if (taroClassComponents.size() === 0) {
+    const taroClassComponents = TaroUtils.findComponentES6ClassDeclaration(this.root, '@tarojs/taro');
+    if (!taroClassComponents || taroClassComponents.size() === 0) {
       return;
     }
 
@@ -78,7 +78,7 @@ class Entry {
   }
 
   transform() {
-    if (!this.root || !this.entryComponent.size() === 0) {
+    if (!this.root || !this.entryComponent || !this.entryComponent.size() === 0) {
       return;
     }
 
