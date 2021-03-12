@@ -43,7 +43,7 @@ describe('typescript', () => {
     jest.resetModules();
   });
 
-  [...tsOnlyTests].forEach((test) => {
+  tsOnlyTests.forEach((test) => {
     defineTest(
       __dirname,
       'taro-imports',

@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const {TARO_ENVS} = require('../bin/constants');
 
-const getConfigExpressionSelector = pageComponentName => ({
+const configExpSelector = pageComponentName => ({
   type: 'AssignmentExpression',
   operator: '=',
   left: {
@@ -83,7 +83,7 @@ module.exports = function (file, api, options) {
       ])
     );
 
-  const createConfigFile = (env, configObjExp) => {
+  const createConfigFile = (env, configObjExp, typeAnnotation) => {
     let body;
     if (env) {
       body = [
@@ -100,6 +100,69 @@ module.exports = function (file, api, options) {
           j.identifier('config')
         )
       ];
+    } else if (typeAnnotation) {
+      const typeIdentifierName = typeAnnotation.typeAnnotation.typeName.name;
+
+      const typeSpecifiers = root
+        .find(j.ImportDeclaration, {
+          type: 'ImportDeclaration'
+        })
+        .filter(path => (
+          (
+            path.value.source.type === 'Literal' ||
+            path.value.source.type === 'StringLiteral'
+          ) && path.value.source.value === '@tarojs/taro'
+        ))
+        .find(j.ImportSpecifier, {
+          type: 'ImportSpecifier',
+          local: {
+            type: 'Identifier',
+            name: typeIdentifierName
+          }
+        });
+
+      const typeReferences = root
+        .find(j.TSTypeReference, {
+          type: 'TSTypeReference',
+          typeName: {
+            type: 'Identifier',
+            name: typeIdentifierName
+          }
+        });
+
+      if (typeReferences.size() === 1) {
+        const typeSpecifier = typeSpecifiers.paths()[0];
+        const specifiers = typeSpecifier.parentPath;
+        const importKind = specifiers.parentPath.value.importKind;
+        if (specifiers.value.length === 1) {
+          j(specifiers.parentPath).remove();
+        } else {
+          j(typeSpecifier).remove();
+        }
+
+        const configIdentifier = j.identifier('config');
+        configIdentifier.typeAnnotation = typeAnnotation;
+
+        body = [
+          j.importDeclaration(
+            [typeSpecifier.value],
+            j.literal('@tarojs/taro'),
+            importKind
+          ),
+          j.variableDeclaration(
+            'const',
+            [
+              j.variableDeclarator(
+                configIdentifier,
+                configObjExp
+              )
+            ]
+          ),
+          j.exportDefaultDeclaration(
+            j.identifier('config')
+          )
+        ];
+      }
     } else {
       body = [j.exportDefaultDeclaration(configObjExp)];
     }
@@ -112,11 +175,10 @@ module.exports = function (file, api, options) {
   const root = j(file.source);
 
   const pageRegExps = pagesToRegExps(options.pages);
-  const pageRegExp = pageRegExps.find(regExp => regExp.test(file.path));
-  if (!pageRegExp) {
+  const currentPageRegExp = pageRegExps.find(regExp => regExp.test(file.path));
+  if (!currentPageRegExp) {
     return;
   }
-
 
   const exportDefaultPaths = root.find(j.ExportDefaultDeclaration, {
     type: 'ExportDefaultDeclaration'
@@ -132,7 +194,7 @@ module.exports = function (file, api, options) {
     ext = '.js';
   }
 
-  const env = pageRegExp.exec(file.path)[1];
+  const env = currentPageRegExp.exec(file.path)[1];
   const suffixIndex = env ? -2 : -1;
   const configFilePath = file.path
     .split('.')
@@ -179,14 +241,16 @@ module.exports = function (file, api, options) {
         }
       });
       if (properties.size() !== 0) {
-        configObjExp = properties.paths()[0].value.value;
-        configFile = createConfigFile(env, configObjExp);
+        const configProperty = properties.paths()[0].value;
+        const typeAnnotation = configProperty.typeAnnotation;
+        configObjExp = configProperty.value;
+        configFile = createConfigFile(env, configObjExp, typeAnnotation);
         properties.remove();
         source = root.toSource(options);
       } else {
         const expressions = root.find(
           j.AssignmentExpression,
-          getConfigExpressionSelector(pageComponentName)
+          configExpSelector(pageComponentName)
         );
 
         if (expressions.size() !== 0) {
@@ -207,7 +271,7 @@ module.exports = function (file, api, options) {
     if (pageComponentName) {
       const expressions = root.find(
         j.AssignmentExpression,
-        getConfigExpressionSelector(pageComponentName)
+        configExpSelector(pageComponentName)
       );
 
       if (expressions.size() !== 0) {
