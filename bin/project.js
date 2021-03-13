@@ -10,19 +10,70 @@ const j = jscodeshift.withParser('babylon');
 
 const getType = obj => obj === null ? 'null' : typeof obj;
 
+function transformConfig(source) {
+  const root = j(source);
+
+  const projectNameObjProp = root.find(j.ObjectProperty, {
+    type: 'ObjectProperty',
+    key: {
+      type: 'Identifier',
+      name: 'projectName'
+    }
+  });
+  if (projectNameObjProp.size() !== 0) {
+    projectNameObjProp.insertBefore(
+      j.objectProperty(
+        j.identifier('framework'),
+        j.stringLiteral('react')
+      )
+    );
+  }
+
+  const babelObjProp = root.find(j.ObjectProperty, {
+    type: 'ObjectProperty',
+    key: {
+      type: 'Identifier',
+      name: 'babel'
+    }
+  });
+  if (babelObjProp.size() > 0) {
+    babelObjProp.remove();
+  }
+
+  const sassLoaderOptionObjProp = root.find(j.ObjectProperty, {
+    type: 'ObjectProperty',
+    key: {
+      type: 'Identifier',
+      name: 'sassLoaderOption'
+    }
+  });
+  if (sassLoaderOptionObjProp.size() > 0) {
+    const props = sassLoaderOptionObjProp.paths()[0].value.value.properties;
+    const dataProp = props.find(p => (
+      p.type === 'ObjectProperty' &&
+      p.key.type === 'Identifier' &&
+      p.key.name === 'data'
+    ));
+    if (dataProp) {
+      dataProp.key.name = 'prependData';
+    }
+  }
+
+  return root.toSource();
+}
+
 class Project {
   constructor(dir) {
-    this.dir = dir;
-    this.configFilePath = path.join(this.dir, `${PROJECT_CONFIG_DIR}/index.js`);
+    this.configFilePath = path.join(dir, `${PROJECT_CONFIG_DIR}/index.js`);
 
     if (!fs.existsSync(this.configFilePath)) {
-      throw new Error(`We can't found your taro config file: ${this.configFilePath}.`);
+      throw new Error(`Can't found your taro config file: ${this.configFilePath}.`);
     }
 
     this.config = getDefaultExport(require(this.configFilePath)(merge));
 
     if (typeof this.config !== 'object' || this.config === null) {
-      throw new Error(`Taro config file should export an object type value, now is ${getType(this.config)}.`);
+      throw new Error(`Taro config file should return an object type value, now is ${getType(this.config)}.`);
     }
 
     this.sourceRoot = this.config.sourceRoot;
@@ -34,13 +85,16 @@ class Project {
       Object.keys(TARO_ENVS)
         .map(key => {
           const env = TARO_ENVS[key];
-          return resolveScriptPath(path.join(this.sourceRoot, 'app'), env);
+          return resolveScriptPath(path.join(dir, this.sourceRoot, 'app'), env);
         })
+        .filter(p => !!p)
     )];
 
-    this.entries = this.entryFiles
-      .map(f => path.join(dir, f))
-      .map(p => new Entry(p));
+    if (this.entryFiles.length === 0) {
+      throw new Error(`Can't found your taro entry file, like: ${path.join(this.sourceRoot, 'app.js')}.`);
+    }
+
+    this.entries = this.entryFiles.map(p => new Entry(p));
 
     this.pages = this.entries
       .map(e => e.pages)
@@ -51,49 +105,10 @@ class Project {
       );
   }
 
-  transformConfig() {
+  transformAndOverwriteConfig() {
     const source = fs.readFileSync(this.configFilePath, 'utf-8');
-    const root = j(source);
-
-    const projectNameObjProp = root.find(j.ObjectProperty, {
-      type: 'ObjectProperty',
-      key: {
-        type: 'Identifier',
-        name: 'projectName'
-      }
-    });
-    if (projectNameObjProp.size() !== 0) {
-      projectNameObjProp.insertBefore(
-        j.objectProperty(
-          j.identifier('framework'),
-          j.stringLiteral('react')
-        )
-      );
-    }
-
-    const babelObjProp = root.find(j.ObjectProperty, {
-      type: 'ObjectProperty',
-      key: {
-        type: 'Identifier',
-        name: 'babel'
-      }
-    });
-    if (babelObjProp.size() > 0) {
-      babelObjProp.remove();
-    }
-
-    const sassLoaderOptionObjProp = root.find(j.ObjectProperty, {
-      type: 'ObjectProperty',
-      key: {
-        type: 'Identifier',
-        name: 'sassLoaderOption'
-      }
-    });
-    if (sassLoaderOptionObjProp.size() > 0) {
-      sassLoaderOptionObjProp.paths()[0].value.key.name = 'prependData';
-    }
-
-    fs.writeFileSync(this.configFilePath, root.toSource());
+    const transformedSource = transformConfig(source);
+    fs.writeFileSync(this.configFilePath, transformedSource);
   }
 
   transformEntry() {
@@ -108,4 +123,5 @@ class Project {
   }
 }
 
+Project.transformConfig = transformConfig;
 module.exports = Project;

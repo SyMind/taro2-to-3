@@ -3,7 +3,6 @@ const path = require('path');
 const {SECIPT_EXTS} = require('./constants');
 
 function resolveScriptPath(p, env) {
-  const realPath = p;
   for (let i = 0; i < SECIPT_EXTS.length; i++) {
     const ext = SECIPT_EXTS[i];
     if (env) {
@@ -24,7 +23,7 @@ function resolveScriptPath(p, env) {
       return `${p}${path.sep}index${ext}`;
     }
   }
-  return realPath;
+  return null;
 }
 
 const getDefaultExport = module => module.__esModule ? module.default : module;
