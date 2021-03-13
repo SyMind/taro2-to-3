@@ -124,5 +124,31 @@ describe('Project', () => {
         `
       );
     });
+
+    it('remove deprecated plugins', () => {
+      const transformedConfig = Project.transformConfig(
+        unIndent`
+          const config = {
+            projectName: 'hello-world',
+            sourceRoot: 'src',
+            plugins: [
+              '@tarojs/plugin-mock',
+              '@tarojs/taro-qq'
+            ]
+          };
+        `
+      );
+
+      expect(transformedConfig).toEqual(
+        unIndent`
+          const config = {
+            framework: "react",
+            projectName: 'hello-world',
+            sourceRoot: 'src',
+            plugins: ['@tarojs/plugin-mock']
+          };
+        `
+      );
+    });
   });
 });

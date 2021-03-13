@@ -4,6 +4,7 @@ const {merge} = require('lodash');
 const jscodeshift = require('jscodeshift');
 const {TARO_ENVS, PROJECT_CONFIG_DIR} = require('./constants');
 const {resolveScriptPath, getDefaultExport} = require('./utils');
+const {deprecated} = require('./taroDeps');
 const Entry = require('./entry');
 
 const j = jscodeshift.withParser('babylon');
@@ -57,6 +58,25 @@ function transformConfig(source) {
     if (dataProp) {
       dataProp.key.name = 'prependData';
     }
+  }
+
+  const pluginsArrProp = root.find(j.ObjectProperty, {
+    type: 'ObjectProperty',
+    key: {
+      type: 'Identifier',
+      name: 'plugins'
+    },
+    value: {
+      type: 'ArrayExpression'
+    }
+  });
+  if (pluginsArrProp.size() > 0) {
+    const elements = pluginsArrProp.paths()[0].value.value.elements;
+    const validElements = elements.filter(e => (
+      e.type === 'StringLiteral' &&
+      deprecated.indexOf(e.value) === -1
+    ));
+    pluginsArrProp.paths()[0].value.value.elements = validElements;
   }
 
   return root.toSource();
