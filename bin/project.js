@@ -3,10 +3,12 @@ const fs = require('graceful-fs');
 const {merge} = require('lodash');
 const jscodeshift = require('jscodeshift');
 const {TARO_ENVS, PROJECT_CONFIG_DIR} = require('./constants');
-const {resolveScriptPath} = require('./utils');
+const {resolveScriptPath, getDefaultExport} = require('./utils');
 const Entry = require('./entry');
 
 const j = jscodeshift.withParser('babylon');
+
+const getType = obj => obj === null ? 'null' : typeof obj;
 
 class Project {
   constructor(dir) {
@@ -14,10 +16,19 @@ class Project {
     this.configFilePath = path.join(this.dir, `${PROJECT_CONFIG_DIR}/index.js`);
 
     if (!fs.existsSync(this.configFilePath)) {
-      throw new Error(`We cannot found your taro config file: ${this.configFilePath}`);
+      throw new Error(`We can't found your taro config file: ${this.configFilePath}.`);
     }
 
-    this.config = require(this.configFilePath)(merge);
+    this.config = getDefaultExport(require(this.configFilePath)(merge));
+
+    if (typeof this.config !== 'object' || this.config === null) {
+      throw new Error(`Taro config file should export an object type value, now is ${getType(this.config)}.`);
+    }
+
+    this.sourceRoot = this.config.sourceRoot;
+    if (typeof this.sourceRoot !== 'string') {
+      throw new Error(`Taro sourceRoot in config should an string type value, now is ${getType(this.sourceRoot)}.`);
+    }
 
     this.entryFiles = [...new Set(
       Object.keys(TARO_ENVS)
@@ -38,10 +49,6 @@ class Project {
         ? `${this.sourceRoot}${p}`
         : `${this.sourceRoot}/${p}`
       );
-  }
-
-  get sourceRoot() {
-    return this.config.sourceRoot;
   }
 
   transformConfig() {

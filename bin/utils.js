@@ -27,6 +27,9 @@ function resolveScriptPath(p, env) {
   return realPath;
 }
 
+const getDefaultExport = module => module.__esModule ? module.default : module;
+
 module.exports = {
-  resolveScriptPath
+  resolveScriptPath,
+  getDefaultExport
 };
