@@ -32,7 +32,8 @@ module.exports = {
     '@tarojs/taro-alipay',
     '@tarojs/taro-swan',
     '@tarojs/taro-tt',
-    '@tarojs/taro-weapp'
+    '@tarojs/taro-weapp',
+    '@tarojs/taro-qq'
   ],
   upgrade: [
     'babel-plugin-transform-taroapi',
