@@ -74,6 +74,37 @@ class Entry {
       return;
     }
 
+    const renderMethod = this.entryComponent.find(j.ClassMethod, {
+      type: 'ClassMethod',
+      key: {
+        type: 'Identifier',
+        name: 'render'
+      }
+    });
+
+    const taro3RenderMethod = j.classMethod(
+      'method',
+      j.identifier('render'),
+      [],
+      j.blockStatement([
+        j.returnStatement(
+          j.memberExpression(
+            j.memberExpression(
+              j.thisExpression(),
+              j.identifier('props')
+            ),
+            j.identifier('children')
+          )
+        )
+      ])
+    );
+    if (renderMethod.size() === 0) {
+      const classBody = this.entryComponent.paths()[0].value.body.body;
+      classBody.push(taro3RenderMethod);
+    } else {
+      renderMethod.replaceWith(taro3RenderMethod);
+    }
+
     const exportDefaultPaths = this.root.find(j.ExportDefaultDeclaration, {
       type: 'ExportDefaultDeclaration'
     });
