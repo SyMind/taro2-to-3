@@ -23,6 +23,13 @@ taro2-to-3
 1. 3-14 日前完成 TODO 列表中的左右的所有功能，发布 beta 版本；
 2. 3-20 日前发布正式版本，并发布到 taro 物料中心。
 
+已知问题：
+
+1. h5 Taro.pxTransform https://github.com/NervJS/taro/issues/8896
+2. 函数式组件中 router api 转换使用 useMemo 进行缓存优化
+3. 存在 `const enum` 时增加相应的 babel 插件进行处理
+4. taro 3.2.x 以上版本中 preloadData api 发生变更
+
 ## 脚本包括
 
 ### `taro-imports`
