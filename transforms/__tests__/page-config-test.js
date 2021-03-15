@@ -3,7 +3,7 @@
 jest.autoMockOff();
 const {defineTest, runInlineTest} = require('jscodeshift/dist/testUtils');
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs-extra');
 
 const tests = [
   'class-component',

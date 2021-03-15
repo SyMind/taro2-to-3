@@ -1,5 +1,5 @@
 const path = require('path');
-const fs = require('graceful-fs');
+const fs = require('fs-extra');
 const {merge} = require('lodash');
 const jscodeshift = require('jscodeshift');
 const {TARO_ENVS, PROJECT_CONFIG_DIR} = require('./constants');

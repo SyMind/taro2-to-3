@@ -1,4 +1,4 @@
-const fs = require('graceful-fs');
+const fs = require('fs-extra');
 const jscodeshift = require('jscodeshift');
 
 const j = jscodeshift.withParser('babylon');
@@ -11,7 +11,7 @@ class Entry {
   
     this.code = fs.readFileSync(entryFilePath).toString();
     this.root = j(this.code);
-    const TaroUtils = require('../transforms/TaroUtils')(j);
+    const TaroUtils = require('../transforms/utils/TaroUtils')(j);
 
     const taroClassComponents = TaroUtils.findComponentES6ClassDeclaration(this.root, '@tarojs/taro');
     if (!taroClassComponents || taroClassComponents.size() === 0) {

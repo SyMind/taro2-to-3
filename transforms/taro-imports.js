@@ -1,3 +1,5 @@
+const {markDependency} = require('./utils/marker');
+
 const REACT_APIS = [
   // Class component
   'Component',
@@ -25,6 +27,16 @@ const REACT_APIS = [
 module.exports = function (file, api, options) {
   const j = api.jscodeshift;
   const root = j(file.source);
+
+  root
+    .find(j.TSEnumDeclaration, {
+      type: 'TSEnumDeclaration',
+      const: true
+    })
+    .forEach(() => {
+      markDependency('babel-plugin-const-enum');
+    });
+
 
   // Get all paths that import from Taro
   const taroImportPaths = root

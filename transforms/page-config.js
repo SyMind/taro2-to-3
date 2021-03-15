@@ -1,5 +1,5 @@
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs-extra');
 const {TARO_ENVS} = require('../bin/constants');
 
 const configExpSelector = pageComponentName => ({
@@ -34,7 +34,7 @@ function pagesToRegExps(pages) {
 
 module.exports = function (file, api, options) {
   const j = api.jscodeshift;
-  const TaroUtils = require('./TaroUtils')(j);
+  const TaroUtils = require('./utils/TaroUtils')(j);
 
   const evalConfigComments = (root, basename) => {
     const comments = root.paths()[0].value.program.body[0].comments;

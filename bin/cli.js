@@ -1,6 +1,6 @@
 #! /usr/bin/env node
 
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 const os = require('os');
 const chalk = require('chalk');
@@ -11,8 +11,10 @@ const Table = require('cli-table');
 const inquirer = require('inquirer');
 const semverSatisfies = require('semver/functions/satisfies');
 const jscodeshiftBin = require.resolve('.bin/jscodeshift');
+const ejs = require('ejs');
 
 const taroDeps = require('./taroDeps');
+const marker = require('../transforms/utils/marker');
 
 const transformersDir = path.join(__dirname, '../transforms');
 const Project = require('./project');
@@ -142,20 +144,37 @@ async function transform(transformer, parser, filePath, options) {
   }
 }
 
-async function checkBabelConfig(projectDir) {
+function renderBabelConfig(dependenciesMarkers) {
+  return new Promise((resolve, reject) => {
+    ejs.renderFile(
+      path.join(__dirname, 'templates/babel.config.ejs'),
+      {
+        shouldUseConstEnumPlugin: dependenciesMarkers['babel-plugin-const-enum'] > 0
+      },
+      (err, str) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        resolve(str);
+      }
+    );
+  });
+}
+
+async function checkBabelConfig(projectDir, dependenciesMarkers) {
   try {
-    if (!fs.existsSync(path.join(projectDir, 'babel.config.js'))) {
-      fs.copyFileSync(
-        path.join(__dirname, 'templates/babel.config.js'),
-        path.join(projectDir, 'babel.config.js')
-      );
+    const projectBabelConfigPath = path.join(projectDir, 'babel.config.js');
+    if (!fs.existsSync(projectBabelConfigPath)) {
+      const source = await renderBabelConfig(dependenciesMarkers);
+      await fs.writeFile(projectBabelConfigPath, source);
     }
   } catch (error) {
-    console.log(error.message);
+    console.log(chalk.red(error.message));
   }
 }
 
-async function checkDependencies(targetDir) {
+async function checkDependencies(targetDir, dependenciesMarkers) {
   const cwd = path.join(process.cwd(), targetDir);
   const closetPkgJson = await readPkgUp({ cwd });
 
@@ -248,7 +267,10 @@ async function checkDependencies(targetDir) {
       stripEof: false
     });
 
-    const devInstallDeps = installDeps.filter(d => d.dev).map(d => d.name);
+    const devInstallDeps = installDeps
+      .filter(d => d.dev)
+      .map(d => d.name)
+      .concat(Object.keys(dependenciesMarkers));
     console.log(chalk.gray(`\n> ${bin} install -D ${devInstallDeps.join(' ')}\n`));
     await execa(bin, ['install', '-D', ...devInstallDeps], {
       stdio: 'inherit',
@@ -299,10 +321,14 @@ async function bootstrap() {
   project.transformAndOverwriteConfig();
   project.transformEntry();
 
+  await marker.start();
+
   args.pages = project.pages.concat(`${project.sourceRoot}/app`).join(',');
   await run(project.sourceRoot, args);
-  await checkBabelConfig(projectDir);
-  await checkDependencies(project.sourceRoot);
+
+  const dependenciesMarkers = await marker.output();
+  await checkBabelConfig(projectDir, dependenciesMarkers);
+  await checkDependencies(project.sourceRoot, dependenciesMarkers);
 
   console.log('\n----------- Thanks for using taro-2-to-3 -----------');
 }
