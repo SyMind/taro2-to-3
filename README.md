@@ -31,6 +31,17 @@ taro2-to-3
 4. taro 内部 `__taroRouterChange` 事件参数变更
 5. taro 3.2.x 以上版本中 preloadData api 发生变更
 
+## 处理流程
+
+1. 读取 Taro 项目中的编译配置文件 `config/index.js`.
+    1. 读取其中的配置项 `sourceRoot` ，获取项目入口文件所在目录。
+    2. 更新编译配置文件。
+2. 读取当前项目中的入口文件，如 `{sourceRoot}/app.js`。
+    1. 读取其中的配置项 `pages` ，获取项目中所有的页面路径。
+    2. 更新入口文件。
+3. 执行以下脚本。
+4. 读取项目的 `package.json` 文件，检查并更新依赖。
+
 ## 脚本包括
 
 ### `taro-imports`
