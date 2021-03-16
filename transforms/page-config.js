@@ -134,11 +134,6 @@ module.exports = function (file, api, options) {
         const typeSpecifier = typeSpecifiers.paths()[0];
         const specifiers = typeSpecifier.parentPath;
         const importKind = specifiers.parentPath.value.importKind;
-        if (specifiers.value.length === 1) {
-          j(specifiers.parentPath).remove();
-        } else {
-          j(typeSpecifier).remove();
-        }
 
         const configIdentifier = j.identifier('config');
         configIdentifier.typeAnnotation = typeAnnotation;
@@ -162,6 +157,12 @@ module.exports = function (file, api, options) {
             j.identifier('config')
           )
         ];
+
+        if (specifiers.value.length === 1) {
+          j(specifiers.parentPath).remove();
+        } else {
+          j(typeSpecifier).remove();
+        }
       }
     } else {
       body = [j.exportDefaultDeclaration(configObjExp)];

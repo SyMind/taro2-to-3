@@ -1,4 +1,10 @@
-export default class Index extends Component {
+import { Component } from '@tarojs/taro';
+
+interface IndexProps {}
+
+interface IndexState {}
+
+export default class Index extends Component<IndexProps, IndexState> {
   render() {
     return null;
   }

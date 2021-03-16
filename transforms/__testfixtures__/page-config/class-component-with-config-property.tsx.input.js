@@ -1,6 +1,10 @@
-import { Config } from '@tarojs/taro';
+import { Config, Component } from '@tarojs/taro';
 
-export default class Index extends Component {
+interface IndexProps {}
+
+interface IndexState {}
+
+export default class Index extends Component<IndexProps, IndexState> {
   config: Config = {
     navigationBarTitleText: '首页'
   }
