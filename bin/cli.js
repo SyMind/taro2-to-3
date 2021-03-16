@@ -233,7 +233,7 @@ async function checkDependencies(targetDir, dependenciesMarkers) {
   console.log('\n* Upgrade\n');
   console.log(chalk.blue(upgradeDepsTable.toString()));
   console.log('\n* Uninstall\n');
-  console.log(chalk.red(deprecatedDeps.join('\n')));
+  console.log(chalk.red(deprecatedDeps.join(os.EOL)));
   console.log('\n');
 
   const pkgs = Object.keys(upgradeDeps).map(depName => {
@@ -305,7 +305,7 @@ async function bootstrap() {
               'WARNING: You are trying to skip git status checking, please be careful'
             )
           )
-          .join('\n')
+          .join(os.EOL)
       );
     }
   }

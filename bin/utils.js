@@ -1,5 +1,6 @@
 const fs = require('fs-extra');
 const path = require('path');
+const os = require('os');
 const {SECIPT_EXTS} = require('./constants');
 
 function resolveScriptPath(p, env) {
@@ -36,7 +37,7 @@ function unIndent(strings, ...values) {
   const lineIndents = lines.filter(line => line.trim()).map(line => line.match(/ */u)[0].length);
   const minLineIndent = Math.min(...lineIndents);
 
-  return lines.map(line => line.slice(minLineIndent)).join('\n');
+  return lines.map(line => line.slice(minLineIndent)).join(os.EOL);
 }
 
 module.exports = {

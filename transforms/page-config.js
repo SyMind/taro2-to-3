@@ -1,5 +1,7 @@
 const path = require('path');
 const fs = require('fs-extra');
+const slash = require('slash');
+const os = require('os');
 const {TARO_ENVS} = require('../bin/constants');
 
 const configExpSelector = pageComponentName => ({
@@ -174,9 +176,10 @@ module.exports = function (file, api, options) {
   };
 
   const root = j(file.source);
+  const slashFilePath = slash(file.path);
 
   const pageRegExps = pagesToRegExps(options.pages);
-  const currentPageRegExp = pageRegExps.find(regExp => regExp.test(file.path));
+  const currentPageRegExp = pageRegExps.find(regExp => regExp.test(slashFilePath));
   if (!currentPageRegExp) {
     return;
   }
@@ -188,16 +191,16 @@ module.exports = function (file, api, options) {
     return;
   }
 
-  let ext = path.extname(file.path);
+  let ext = path.extname(slashFilePath);
   if (['.tsx', '.ts'].indexOf(ext) !== -1) {
     ext = '.ts';
   } else {
     ext = '.js';
   }
 
-  const env = currentPageRegExp.exec(file.path)[1];
+  const env = currentPageRegExp.exec(slashFilePath)[1];
   const suffixIndex = env ? -2 : -1;
-  const configFilePath = file.path
+  const configFilePath = slashFilePath
     .split('.')
     .slice(0, suffixIndex)
     .concat(`config${ext}`)
@@ -297,7 +300,7 @@ module.exports = function (file, api, options) {
         '/*',
         existedConfigRoot.toSource(options).trim(),
         '*/'
-      ].filter(x => !!x).join('\n');
+      ].filter(x => !!x).join(os.EOL);
     }
 
     return [
@@ -306,7 +309,7 @@ module.exports = function (file, api, options) {
       '/*',
       configSource,
       '*/'
-    ].filter(x => !!x).join('\n');
+    ].filter(x => !!x).join(os.EOL);
   } else {
     if (fs.existsSync(configFilePath)) {
       const existedConfigRoot = j(fs.readFileSync(configFilePath, 'utf-8'));

@@ -2,6 +2,7 @@ const path = require('path');
 const fs = require('fs-extra');
 const {merge} = require('lodash');
 const jscodeshift = require('jscodeshift');
+const slash = require('slash');
 const {TARO_ENVS, PROJECT_CONFIG_DIR} = require('./constants');
 const {resolveScriptPath, getDefaultExport} = require('./utils');
 const {deprecated} = require('./taroDeps');
@@ -87,7 +88,7 @@ class Project {
     this.configFilePath = path.join(dir, `${PROJECT_CONFIG_DIR}/index.js`);
 
     if (!fs.existsSync(this.configFilePath)) {
-      throw new Error(`Can't found your taro config file: ${this.configFilePath}.`);
+      throw new Error(`Can't found your taro config file: ${slash(this.configFilePath)}.`);
     }
 
     this.config = getDefaultExport(require(this.configFilePath)(merge));
@@ -111,7 +112,7 @@ class Project {
     )];
 
     if (this.entryFiles.length === 0) {
-      throw new Error(`Can't found your taro entry file, like: ${path.join(this.sourceRoot, 'app.js')}.`);
+      throw new Error(`Can't found your taro entry file, like: ${slash(path.join(this.sourceRoot, 'app.js'))}.`);
     }
 
     this.entries = this.entryFiles.map(p => new Entry(p));

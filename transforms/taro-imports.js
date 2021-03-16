@@ -1,3 +1,4 @@
+const os = require('os');
 const {markDependency} = require('./utils/marker');
 
 const REACT_APIS = [
@@ -175,11 +176,11 @@ module.exports = function (file, api, options) {
 
   const source = root.toSource(options);
   if (imports[0].comments) {
-    const lines = source.split('\n');
+    const lines = source.split(os.EOL);
     if (!lines[blankLine]) {
       lines.splice(blankLine, 1);
     }
-    return lines.join('\n');
+    return lines.join(os.EOL);
   }
 
   return source;

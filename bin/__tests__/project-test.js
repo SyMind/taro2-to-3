@@ -1,4 +1,5 @@
 const path = require('path');
+const slash = require('slash');
 const {unIndent} = require('../utils');
 const Project = require('../project');
 
@@ -8,7 +9,7 @@ describe('Project', () => {
     const projectDir = path.resolve(__dirname, `../__testfixtures__/project/${projectDirname}`);
     const expectedConfigPath = path.join(projectDir, 'config/index.js');
     expect(() => new Project(projectDir)).toThrowError(
-      `Can't found your taro config file: ${expectedConfigPath}`
+      `Can't found your taro config file: ${slash(expectedConfigPath)}`
     );
   });
 
