@@ -27,9 +27,9 @@ taro2-to-3
 
 1. h5 Taro.pxTransform https://github.com/NervJS/taro/issues/8896
 2. 函数式组件中 router api 转换使用 useMemo 进行缓存优化
-3. 存在 `const enum` 时增加相应的 babel 插件进行处理
-4. taro 内部 `__taroRouterChange` 事件参数变更
-5. taro 3.2.x 以上版本中 preloadData api 发生变更
+3. taro 内部 `__taroRouterChange` 事件参数变更
+4. taro 3.2.x 以上版本中 preloadData api 发生变更
+5. 缺失对 `this.$scope` api 进行转换
 
 ## 处理流程
 
