@@ -8,6 +8,7 @@ const tests = [
   'function-component',
   'class-component-updated-by-taro-imports',
   'function-component-updated-by-taro-imports',
+  'function-component-with-mltiplue-use-router',
   'allready'
 ];
 

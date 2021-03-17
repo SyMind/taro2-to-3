@@ -1,8 +1,97 @@
+function findComponentOrHook(path) {
+  while (path) {
+    if (
+      path.value.type === 'FunctionDeclaration' ||
+      path.value.type === 'FunctionExpression' ||
+      path.value.type === 'FunctionExpression' ||
+      path.value.type === 'ArrowFunctionExpression'
+    ) {
+      return path;
+    }
+    path = path.parentPath;
+  }
+  return false;
+}
+
+const DEFAULT_INSTANCE_NAME = '$instance';
+
 module.exports = function (file, api, options) {
   const j = api.jscodeshift;
   const root = j(file.source);
 
   const TaroUtils = require('./utils/TaroUtils')(j);
+
+  function findInstanceName(componentOrHook, useMemoLocalName) {
+    const usedNamedImportPaths = j(componentOrHook).find(j.VariableDeclarator, {
+      type: 'VariableDeclarator',
+      id: {
+        type: 'Identifier'
+      },
+      init: {
+        type: 'CallExpression',
+        callee: {
+          type: 'Identifier',
+          name: useMemoLocalName || 'useMemo'
+        },
+        arguments: [
+          {
+            type: 'Identifier',
+            name: 'getCurrentInstance'
+          },
+          {
+            type: 'ArrayExpression'
+          }
+        ]
+      }
+    });
+
+    const usedDefaultImportPaths = j(componentOrHook).find(j.VariableDeclarator, {
+      type: 'VariableDeclarator',
+      id: {
+        type: 'Identifier'
+      },
+      init: {
+        type: 'CallExpression',
+        callee: {
+          type: 'MemberExpression',
+          object: {
+            type: 'Identifier',
+            name: 'React'
+          },
+          property: {
+            type: 'Identifier',
+            name: 'useMemo'
+          }
+        },
+        arguments: [
+          {
+            type: 'MemberExpression',
+            object: {
+              type: 'Identifier',
+              name: 'Taro'
+            },
+            property: {
+              type: 'Identifier',
+              name: 'getCurrentInstance'
+            }
+          },
+          {
+            type: 'ArrayExpression'
+          }
+        ]
+      }
+    });
+
+    if (usedNamedImportPaths.size() === 0 && usedDefaultImportPaths.size() === 0) {
+      return null;
+    }
+
+    const usedPath = usedNamedImportPaths.size() > 0
+      ? usedNamedImportPaths
+      : usedDefaultImportPaths;
+
+    return usedPath.paths()[0].value.id.name;
+  }
 
   const taroImportPaths = root
     .find(j.ImportDeclaration, {
@@ -30,8 +119,25 @@ module.exports = function (file, api, options) {
     return;
   }
 
+  // Use the react import declaration first.
+  const importPaths = reactImportPaths.size() > 0 ? reactImportPaths : taroImportPaths;
+
+  const useMemoPaths = importPaths.find(j.ImportSpecifier, {
+    type: 'ImportSpecifier',
+    imported: {
+      type: 'Identifier',
+      name: 'useMemo'
+    }
+  });
+  let useMemoLocalName = null;
+  if (useMemoPaths.size() > 0) {
+    useMemoLocalName = useMemoPaths.pashs()[0].value.local.name;
+  }
+
   let taroPath = null;
-  let shouldTransform = false;
+  let shouldImportUseMemo = false;
+  let shouldImportReact = false;
+  let transformed = false;
 
   // Handle function component.
   if (taroImportPaths.size() > 0) {
@@ -48,32 +154,65 @@ module.exports = function (file, api, options) {
     );
 
     if (useRouterImport) {
-      const useRouterUsed = root.find(j.CallExpression, {
+      const useRouterCalls = root.find(j.CallExpression, {
         type: 'CallExpression',
         callee: {
           name: useRouterImport.local.name
         }
       });
 
-      if (useRouterUsed.size() > 0) {
-        shouldTransform = true;
+      if (useRouterCalls.size() > 0) {
+        transformed = true;
 
-        useRouterUsed.forEach(path => {
-          j(path).replaceWith(
-            j.memberExpression(
-              j.callExpression(
-                j.identifier('getCurrentInstance'),
-                []
-              ),
-              j.identifier('router')
-            )
-          );
+        useRouterCalls.forEach(path => {
+          const componentOrHook = findComponentOrHook(path);
+          if (componentOrHook) {
+            const instanceName = findInstanceName(componentOrHook, useMemoLocalName);
+            if (!instanceName) {
+              shouldImportUseMemo = true;
+
+              componentOrHook.value.body.body.unshift(
+                j.variableDeclaration(
+                  'const',
+                  [
+                    j.variableDeclarator(
+                      j.identifier(DEFAULT_INSTANCE_NAME),
+                      j.callExpression(
+                        j.identifier(useMemoLocalName || 'useMemo'),
+                        [
+                          j.identifier('getCurrentInstance'),
+                          j.arrayExpression([])
+                        ]
+                      )
+                    )
+                  ]
+                )
+              );
+            }
+
+            j(path).replaceWith(
+              j.memberExpression(
+                j.identifier(instanceName || DEFAULT_INSTANCE_NAME),
+                j.identifier('router')
+              )
+            );
+          } else {
+            j(path).replaceWith(
+              j.memberExpression(
+                j.callExpression(
+                  j.identifier('getCurrentInstance'),
+                  []
+                ),
+                j.identifier('router')
+              )
+            );
+          }
         });
 
         taroPath.value.specifiers = taroPath.value.specifiers
           .filter(specifier =>
             specifier.type !== 'ImportSpecifier' ||
-            specifier.imported.name !== 'useRouter'
+            specifier.imported.name !== useRouterImport.local.name
           )
           .concat(
             j.importSpecifier(
@@ -82,7 +221,7 @@ module.exports = function (file, api, options) {
           );
       }
     }
-
+    
     if (defaultImport) {
       const useRouterCalls = root.find(j.CallExpression, {
         type: 'CallExpression',
@@ -98,21 +237,60 @@ module.exports = function (file, api, options) {
         }
       });
       if (useRouterCalls.size() > 0) {
-        shouldTransform = true;
+        transformed = true;
 
         useRouterCalls.forEach(path => {
-          j(path).replaceWith(
-            j.memberExpression(
-              j.memberExpression(
-                j.identifier(defaultImport.local.name),
-                j.callExpression(
-                  j.identifier('getCurrentInstance'),
-                  []
+          const componentOrHook = findComponentOrHook(path);
+          if (componentOrHook) {
+            const instanceName = findInstanceName(componentOrHook, useMemoLocalName);
+            if (!instanceName) {
+              shouldImportReact = true;
+
+              componentOrHook.value.body.body.unshift(
+                j.variableDeclaration(
+                  'const',
+                  [
+                    j.variableDeclarator(
+                      j.identifier(DEFAULT_INSTANCE_NAME),
+                      j.callExpression(
+                        j.memberExpression(
+                          j.identifier('React'),
+                          j.identifier('useMemo')
+                        ),
+                        [
+                          j.memberExpression(
+                            j.identifier('Taro'),
+                            j.identifier('getCurrentInstance')
+                          ),
+                          j.arrayExpression([])
+                        ]
+                      )
+                    )
+                  ]
                 )
-              ),
-              j.identifier('router')
-            )
-          );
+              );
+            }
+
+            j(path).replaceWith(
+              j.memberExpression(
+                j.identifier(instanceName || DEFAULT_INSTANCE_NAME),
+                j.identifier('router')
+              )
+            );
+          } else {
+            j(path).replaceWith(
+              j.memberExpression(
+                j.memberExpression(
+                  j.identifier(defaultImport.local.name),
+                  j.callExpression(
+                    j.identifier('getCurrentInstance'),
+                    []
+                  )
+                ),
+                j.identifier('router')
+              )
+            );
+          }
         });
       }
     }
@@ -142,12 +320,12 @@ module.exports = function (file, api, options) {
         return;
       }
 
-      shouldTransform = true;
+      transformed = true;
 
       sholudImportGetCurrentInstance = true;
       component.value.body.body.unshift(
         j.classProperty(
-          j.identifier('$instance'),
+          j.identifier(DEFAULT_INSTANCE_NAME),
           j.callExpression(
             j.identifier('getCurrentInstance'),
             []
@@ -160,7 +338,7 @@ module.exports = function (file, api, options) {
           j.memberExpression(
             j.memberExpression(
               j.thisExpression(),
-              j.identifier('$instance'),
+              j.identifier(DEFAULT_INSTANCE_NAME),
               false
             ),
             j.identifier('router'),
@@ -193,7 +371,30 @@ module.exports = function (file, api, options) {
     }
   }
 
-  if (shouldTransform) {
+  if (shouldImportUseMemo && !useMemoLocalName) {
+    const reactImportPath = reactImportPaths.paths()[0];
+    if (reactImportPath) {
+      reactImportPath.value.specifiers.push(
+        j.importSpecifier(
+          j.identifier('useMemo')
+        )
+      );
+    } else {
+      const reactImportDeclaration = j.importDeclaration(
+        [j.importSpecifier(j.identifier('useMemo'))],
+        j.literal('react')
+      );
+      j(taroPath).insertBefore(reactImportDeclaration);
+    }
+  } else if (shouldImportReact && reactImportPaths.size() === 0) {
+    const reactImportDeclaration = j.importDeclaration(
+      [j.importDefaultSpecifier(j.identifier('React'))],
+      j.literal('react')
+    );
+    j(taroPath).insertBefore(reactImportDeclaration);
+  }
+
+  if (transformed) {
     return root.toSource(options);
   }
 };
