@@ -13,6 +13,19 @@ function findComponentOrHook(path) {
   return false;
 }
 
+function getClassOwnPropSelector(name) {
+  return {
+    type: 'MemberExpression',
+    object: {
+      type: 'ThisExpression'
+    },
+    property: {
+      type: 'Identifier',
+      name
+    }
+  };
+}
+
 const DEFAULT_INSTANCE_NAME = '$instance';
 
 module.exports = function (file, api, options) {
@@ -91,6 +104,59 @@ module.exports = function (file, api, options) {
       : usedDefaultImportPaths;
 
     return usedPath.paths()[0].value.id.name;
+  }
+
+  function ensureInstanceClassProp(classDclPath) {
+    const instancePopPaths = j(classDclPath).find(j.ClassProperty, {
+      type: 'ClassProperty',
+      value: {
+        type: 'CallExpression',
+        callee: {
+          type: 'Identifier',
+          name: 'getCurrentInstance'
+        }
+      }
+    });
+
+    if (instancePopPaths.size() > 0) {
+      return instancePopPaths.paths()[0].key.name;
+    }
+
+    const classBody = classDclPath.value.body.body;
+    classBody.unshift(
+      j.classProperty(
+        j.identifier(DEFAULT_INSTANCE_NAME),
+        j.callExpression(
+          j.identifier('getCurrentInstance'),
+          []
+        )
+      )
+    );
+
+    return DEFAULT_INSTANCE_NAME;
+  }
+
+  function replaceClassOwnPropWithInstance(classDclPath, deprecatedApi, currentApi) {
+    const exps = j(classDclPath).find(j.MemberExpression, getClassOwnPropSelector(deprecatedApi));
+    if (exps.size() === 0) {
+      return false;
+    }
+
+    const instancePropName = ensureInstanceClassProp(classDclPath);
+    exps.forEach(exp => {
+      j(exp).replaceWith(
+        j.memberExpression(
+          j.memberExpression(
+            j.thisExpression(),
+            j.identifier(instancePropName),
+            false
+          ),
+          j.identifier(currentApi),
+          false
+        )
+      );
+    });
+    return true;
   }
 
   const taroImportPaths = root
@@ -304,48 +370,11 @@ module.exports = function (file, api, options) {
   if (classComponents && classComponents.size() > 0) {
     let sholudImportGetCurrentInstance = false;
 
-    classComponents.forEach(component => {
-      const routerMemberExpression = j(component).find(j.MemberExpression, {
-        type: 'MemberExpression',
-        object: {
-          type: 'ThisExpression'
-        },
-        property: {
-          type: 'Identifier',
-          name: '$router'
-        }
-      });
-
-      if (routerMemberExpression.size() === 0) {
-        return;
+    classComponents.forEach(classDclPath => {
+      if (replaceClassOwnPropWithInstance(classDclPath, '$router', 'router')) {
+        transformed = true;
+        sholudImportGetCurrentInstance = true;
       }
-
-      transformed = true;
-
-      sholudImportGetCurrentInstance = true;
-      component.value.body.body.unshift(
-        j.classProperty(
-          j.identifier(DEFAULT_INSTANCE_NAME),
-          j.callExpression(
-            j.identifier('getCurrentInstance'),
-            []
-          )
-        )
-      );
-
-      routerMemberExpression.forEach(identifier => {
-        j(identifier).replaceWith(
-          j.memberExpression(
-            j.memberExpression(
-              j.thisExpression(),
-              j.identifier(DEFAULT_INSTANCE_NAME),
-              false
-            ),
-            j.identifier('router'),
-            false
-          )
-        );
-      });
     });
 
     if (sholudImportGetCurrentInstance) {
