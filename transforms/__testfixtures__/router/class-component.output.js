@@ -4,5 +4,6 @@ class Foo extends Component {
   $instance = getCurrentInstance();
   componentWillMount() {
     console.log(this.$instance.router);
+    console.log(this.$instance.router.id);
   }
 }
