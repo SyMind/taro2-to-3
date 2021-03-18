@@ -26,9 +26,9 @@ taro2-to-3
 已知问题：
 
 1. h5 Taro.pxTransform https://github.com/NervJS/taro/issues/8896
-2. taro 内部 `__taroRouterChange` 事件参数变更
-3. taro 3.2.x 以上版本中 preloadData api 发生变更
-4. 缺失对 `this.$scope` api 进行转换
+2. taro 内部 `__taroRouterChange` 事件参数变更，h5 中参数发生变化，小程序中不触发 https://github.com/NervJS/taro/issues/7903
+3. taro 3.2.x 以上版本中 preloadData api 发生变更 https://github.com/NervJS/taro/commit/d2c4aaf5d9d755bc3ca40f9b449340b360c673d5
+4. 缺失对 `this.$scope` api 进行转换 https://github.com/NervJS/taro/issues/7795
 
 ## 处理流程
 
