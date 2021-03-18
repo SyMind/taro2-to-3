@@ -102,3 +102,7 @@ class Foo extends Component {
     }
 }
 ```
+
+## License
+
+MIT
