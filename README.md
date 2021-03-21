@@ -1,4 +1,4 @@
-# taro2-to-3（beta）
+# taro2-to-3
 
 帮助你将 taro 2.x 项目升级到 taro 3.x 项目，基于 jscodeshift 构建。
 
@@ -18,12 +18,7 @@ npm i -g taro2-to-3
 taro2-to-3
 ```
 
-## 计划
-
-1. 3-14 日前完成 TODO 列表中的左右的所有功能，发布 beta 版本；
-2. 3-20 日前发布正式版本，并发布到 taro 物料中心。
-
-已知问题：
+## 已知问题
 
 1. h5 Taro.pxTransform https://github.com/NervJS/taro/issues/8896
 2. taro 内部 `__taroRouterChange` 事件参数变更，h5 中参数发生变化，小程序中不触发 https://github.com/NervJS/taro/issues/7903
