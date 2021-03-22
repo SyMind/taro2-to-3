@@ -2,6 +2,8 @@
 
 帮助你将 taro 2.x 项目升级到 taro 3.x 项目，基于 jscodeshift 构建。
 
+该工具的处理规则参考 Taro 官方 [迁移指南](https://taro-docs.jd.com/taro/docs/migration)。
+
 ## 动机
 
 愿将 taro 2.x 项目升级到 taro 3.x 项目的过程变得轻松愉悦。
