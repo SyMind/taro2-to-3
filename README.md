@@ -102,4 +102,4 @@ class Foo extends Component {
 
 ## License
 
-MIT
+[MIT](https://github.com/SyMind/taro2-to-3/blob/main/LICENSE)
