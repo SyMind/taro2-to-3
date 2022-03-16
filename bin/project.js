@@ -3,6 +3,7 @@ const fs = require('fs-extra');
 const {merge} = require('lodash');
 const jscodeshift = require('jscodeshift');
 const slash = require('slash');
+const {createBabelRegister} = require('@tarojs/helper');
 const {TARO_ENVS, PROJECT_CONFIG_DIR} = require('./constants');
 const {resolveScriptPath, getDefaultExport} = require('./utils');
 const {deprecated} = require('./taroDeps');
@@ -91,6 +92,9 @@ class Project {
       throw new Error(`Can't found your taro config file: ${slash(this.configFilePath)}.`);
     }
 
+    createBabelRegister({
+      only: [filePath => filePath.indexOf(path.join(dir, PROJECT_CONFIG_DIR)) >= 0]
+    });
     this.config = getDefaultExport(require(this.configFilePath)(merge));
 
     if (typeof this.config !== 'object' || this.config === null) {
@@ -145,4 +149,5 @@ class Project {
 }
 
 Project.transformConfig = transformConfig;
+
 module.exports = Project;

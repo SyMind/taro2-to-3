@@ -197,7 +197,7 @@ module.exports = function (file, api, options) {
   });
   let useMemoLocalName = null;
   if (useMemoPaths.size() > 0) {
-    useMemoLocalName = useMemoPaths.pashs()[0].value.local.name;
+    useMemoLocalName = useMemoPaths.paths()[0].value.local.name;
   }
 
   let taroPath = null;

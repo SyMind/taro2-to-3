@@ -1,6 +1,6 @@
 {
   "name": "taro2-to-3",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "taro 2.x 项目转换为 taro 3.x 项目",
   "bin": {
     "taro2-to-3": "./bin/cli.js"
@@ -32,6 +32,7 @@
   "homepage": "https://github.com/SyMind/taro2-to-3#README.md",
   "dependencies": {
     "@npmcli/arborist": "^2.2.6",
+    "@tarojs/helper": "^2.2.1",
     "chalk": "^4.1.0",
     "cli-table": "^0.3.5",
     "ejs": "^3.1.6",
