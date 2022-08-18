@@ -1,12 +1,12 @@
 # taro2-to-3
 
-帮助你将 taro 2.x 项目升级到 taro 3.x 项目，基于 jscodeshift 构建。
+帮助你将 Taro 2.x 项目升级到 Taro 3.x 项目，基于 jscodeshift 构建。
 
 该工具的处理规则参考 Taro 官方 [迁移指南](https://taro-docs.jd.com/taro/docs/migration)。
 
 ## 动机
 
-愿将 taro 2.x 项目升级到 taro 3.x 项目的过程变得轻松愉悦。
+愿将 Taro 2.x 项目升级到 Taro 3.x 项目的过程变得轻松愉悦。
 
 ## 使用
 
@@ -22,8 +22,8 @@ taro2-to-3
 
 ## 已知问题
 
-1. taro 内部 `__taroRouterChange` 事件参数变更，h5 中参数发生变化，小程序中不触发 https://github.com/NervJS/taro/issues/7903
-2. taro 3.2.x 以上版本中 preloadData api 发生变更 https://github.com/NervJS/taro/commit/d2c4aaf5d9d755bc3ca40f9b449340b360c673d5
+1. Taro 内部 `__taroRouterChange` 事件参数变更，h5 中参数发生变化，小程序中不触发 https://github.com/NervJS/taro/issues/7903
+2. Taro 3.2.x 以上版本中 preloadData api 发生变更 https://github.com/NervJS/taro/commit/d2c4aaf5d9d755bc3ca40f9b449340b360c673d5
 3. 缺失对 `this.$scope` api 进行转换 https://github.com/NervJS/taro/issues/7795
 
 ## 处理流程
