@@ -47,7 +47,7 @@ taro2-to-3
 
 ```diff
 - import Taro, { Component } from '@tarojs/taro';
-+ import React, { Component } from '@tarojs/taro';
++ import React, { Component } from 'react';
 + import Taro from '@tarojs/taro';
 
 class Wallace extends Component {
